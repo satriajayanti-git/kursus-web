@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\{User, Package, Pembayaran}; 
+
+class StudentController extends Controller
+{
+    public function index(Request $request)
+    {
+        $admin = Auth::user();
+        
+        if (!$admin->branch_id) {
+            return redirect('/admin/dashboard')->with('error', 'Akun Anda belum ditugaskan ke cabang manapun!');
+        }
+
+        /**
+         * LOGIC SINKRONISASI:
+         * Mengambil data siswa aktif di cabang terkait dan mendukung pencarian via Smart ID.
+         */
+        $query = User::with('package')
+                    ->where('role', 'siswa')
+                    ->where('branch_id', $admin->branch_id);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            
+            $query->where(function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', '%' . $search . '%')
+                  ->orWhere('username', 'like', '%' . $search . '%')
+                  ->orWhere('id_siswa', 'like', '%' . $search . '%');
+            });
+        }
+
+        $students = $query->orderBy('created_at', 'desc')->get();
+        $search = $request->search;
+
+        return view('admin.siswa.index', compact('students', 'search'));
+    }
+
+    // LOGIC BYPASS ADMIN (Pendaftaran Offline/Walk-In)
+    public function store(Request $request)
+    {
+        $admin = Auth::user();
+        
+        $request->validate([
+            'nama_lengkap' => 'required|string|max:255',
+            'username'     => 'required|string|unique:users',
+            'email'        => 'required|email|unique:users',
+            'password'     => 'required|string|min:6',
+            'no_telp'      => 'required|string|max:20',
+            'alamat'       => 'required|string',
+            'id_package'   => 'required|exists:packages,id_package',
+        ]);
+
+        // Generate Auto ID Siswa (Format: SJN + Bulan + Tahun + Urutan)
+        $currentMonth = date('m'); 
+        $currentYear = date('Y');  
+        $currentYearShort = date('y'); 
+        
+        $prefixId = 'SJN' . $currentMonth . $currentYearShort; 
+
+        $lastStudent = User::where('role', 'siswa')
+            ->where('id_siswa', 'like', $prefixId . '%')
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
+            ->orderBy('id_siswa', 'desc')
+            ->first();
+
+        if ($lastStudent && preg_match('/' . $prefixId . '(\d+)/', $lastStudent->id_siswa, $matches)) {
+            $urutan = intval($matches[1]) + 1;
+        } else {
+            $urutan = 1;
+        }
+
+        $id_siswa = $prefixId . str_pad($urutan, 2, '0', STR_PAD_LEFT);
+
+        // Buat Akun Siswa Baru
+        $siswa = User::create([
+            'id_siswa'     => $id_siswa,
+            'nama_lengkap' => $request->nama_lengkap,
+            'username'     => $request->username,
+            'email'        => $request->email,
+            'password'     => Hash::make($request->password),
+            'no_telp'      => $request->no_telp,
+            'alamat'       => $request->alamat,
+            'id_package'   => $request->id_package,
+            'role'         => 'siswa',
+            'branch_id'    => $admin->branch_id,
+            'status'       => 'Non-Aktif', 
+        ]);
+
+        // Tarik Harga Paket Terkait
+        $paket = Package::where('id_package', $request->id_package)->first();
+
+        // Generate Tagihan ke Modul Keuangan Secara Otomatis
+        Pembayaran::create([
+            'user_id'       => $siswa->id,
+            'id_package'    => $paket->id_package,
+            'branch_id'     => $admin->branch_id,
+            'total_tagihan' => $paket->harga,
+            'jenis_tagihan' => 'Paket Utama',
+            'status'        => 'Pending',
+            'keterangan'    => 'Pendaftaran Offline via Admin. Menunggu upload bukti bayar.',
+        ]);
+
+        return back()->with('success', 'Akun siswa berhasil dibuat dengan ID ' . $id_siswa . '! Tagihan otomatis telah diterbitkan di menu Keuangan.');
+    }
+
+    // MENGELOLA UPDATE DATA SISWA
+    public function update(Request $request, $id)
+    {
+        $admin = Auth::user();
+        $student = User::findOrFail($id);
+
+        // Simpan status lama sebelum diupdate untuk lapisan keamanan
+        $statusAwal = $student->status;
+
+        // Keamanan: Pastikan Admin tidak mengedit siswa dari cabang lain
+        if ($student->branch_id != $admin->branch_id) {
+            return back()->with('error', 'Akses ditolak! Anda tidak dapat mengubah data siswa dari cabang lain.');
+        }
+
+        $request->validate([
+            'nama_lengkap' => 'required|string|max:255',
+            'id_package'   => 'required|exists:packages,id_package',
+            // Validasi di bawah mengabaikan ID siswa yang sedang diubah agar tidak error unique
+            'username'     => 'required|string|unique:users,username,' . $id,
+            'email'        => 'required|email|unique:users,email,' . $id,
+            'no_telp'      => 'required|string|max:20',
+            'status'       => 'required|in:Aktif,Non-Aktif',
+            'alamat'       => 'required|string',
+            'password'     => 'nullable|string|min:6',
+        ]);
+
+        // Proses Update Data (Kecuali ID Package)
+        $student->nama_lengkap = $request->nama_lengkap;
+        $student->username     = $request->username;
+        $student->email        = $request->email;
+        $student->no_telp      = $request->no_telp;
+        $student->status       = $request->status;
+        $student->alamat       = $request->alamat;
+
+        // 🔥 LOGIC KEAMANAN: Hanya ubah paket jika status AWAL siswa BUKAN 'Aktif'
+        if ($statusAwal !== 'Aktif') {
+            $student->id_package = $request->id_package;
+        }
+
+        // Cek jika password diisi, maka update. Jika kosong, biarkan password lama
+        if ($request->filled('password')) {
+            $student->password = Hash::make($request->password);
+        }
+
+        $student->save();
+
+        return back()->with('success', 'Perubahan data siswa ' . $student->nama_lengkap . ' berhasil disimpan!');
+    }
+
+    public function destroy($id)
+    {
+        $student = User::findOrFail($id);
+
+        if ($student->branch_id != Auth::user()->branch_id) {
+            return back()->with('error', 'Akses ditolak! Anda tidak dapat menghapus siswa dari cabang lain.');
+        }
+
+        $student->delete();
+
+        return back()->with('success', 'Data siswa berhasil dihapus dari sistem.');
+    }
+}
