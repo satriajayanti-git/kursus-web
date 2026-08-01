@@ -9,6 +9,10 @@ return new class extends Migration
     public function up()
     {
         Schema::table('branches', function (Blueprint $table) {
+            // Nambahin kolom nama_cabang kalau belum ada
+            if (!Schema::hasColumn('branches', 'nama_cabang')) {
+                $table->string('nama_cabang')->nullable();
+            }
             // Nambahin kolom lokasi kalau belum ada
             if (!Schema::hasColumn('branches', 'lokasi')) {
                 $table->string('lokasi')->nullable()->after('nama_cabang');
@@ -27,7 +31,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->dropColumn(['lokasi', 'detail', 'foto']);
+            $table->dropColumn(['nama_cabang', 'lokasi', 'detail', 'foto']);
         });
     }
 };
