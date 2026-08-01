@@ -4,32 +4,34 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 use App\Models\User;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Membuat Akun Login Admin
-        $adminUser = User::create([
+        // 1. Membuat Akun Admin
+        User::create([
             'username' => 'admin_rakan',
+            'nama_lengkap' => 'Rakan Wafi',
             'email' => 'admin@satriajayanti.com',
-            'password' => Hash::make('password123'), // Password yang akan kamu pakai login
-            'role' => 'admin',
-        ]);
-
-        // 2. Mengisi Biodata ke Tabel Profil Admin
-        DB::table('admins')->insert([
-            'user_id' => $adminUser->id,
-            'nama' => 'Rakan Wafi',
+            'password' => Hash::make('password123'),
             'alamat' => 'Pondok Gede, Bekasi',
-            'jenis_kelamin' => 'Laki-laki',
             'no_telp' => '081234567890',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'role' => 'admin',
+            'status' => 'Aktif', // Penting agar akun langsung bisa dipakai login
         ]);
 
-        $this->command->info('Akun Admin berhasil dibuat!');
+        // 2. Membuat Akun Management
+        User::create([
+            'username' => 'manajer_ops',
+            'nama_lengkap' => 'Manajer Operasional',
+            'email' => 'management@satriajayanti.com',
+            'password' => Hash::make('password123'),
+            'role' => 'management',
+            'status' => 'Aktif',
+        ]);
+
+        $this->command->info('Akun Admin dan Management berhasil dibuat!');
     }
 }
