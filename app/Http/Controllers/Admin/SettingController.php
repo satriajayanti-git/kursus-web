@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\{Setting, Package, Branch, Gallery};
-use Illuminate\Support\Facades\Storage; // 🔥 Mengganti File menjadi Storage
+use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
 {
@@ -19,10 +19,43 @@ class SettingController extends Controller
         ]);
     }
 
+    // 🔥 FUNGSI YANG HILANG TELAH DIKEMBALIKAN (Update Logo & Nama Web)
+    public function updateGeneral(Request $request)
+    {
+        $request->validate([
+            'nama_website' => 'required|string|max:255',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        $setting = Setting::first();
+        if (!$setting) {
+            $setting = new Setting();
+        }
+
+        $setting->nama_website = $request->nama_website;
+
+        if ($request->hasFile('logo')) {
+            // Hapus logo lama jika ada menggunakan Storage
+            if ($setting->logo && Storage::disk('public')->exists('uploads/settings/' . $setting->logo)) {
+                Storage::disk('public')->delete('uploads/settings/' . $setting->logo);
+            }
+
+            $file = $request->file('logo');
+            $filename = time() . '_logo.' . $file->getClientOriginalExtension();
+
+            // Simpan ke storage/app/public/uploads/settings
+            $file->storeAs('uploads/settings', $filename, 'public');
+
+            $setting->logo = $filename;
+        }
+
+        $setting->save();
+        return back()->with('success', 'Pengaturan umum dan logo berhasil diperbarui.');
+    }
+
     // ================= TAMBAH DATA =================
     public function addPackage(Request $request)
     {
-        // 🔥 Tambahan validasi transmisi, kategori, dan detail
         $request->validate([
             'nama_package' => 'required',
             'pertemuan' => 'required|numeric',
@@ -36,9 +69,9 @@ class SettingController extends Controller
         $package->nama_package = $request->nama_package;
         $package->pertemuan = $request->pertemuan;
         $package->harga = $request->harga;
-        $package->transmisi = $request->transmisi; // 🔥 Panggil field transmisi
-        $package->kategori = $request->kategori;   // 🔥 Panggil field kategori
-        $package->detail = $request->detail;       // 🔥 Panggil field detail
+        $package->transmisi = $request->transmisi;
+        $package->kategori = $request->kategori;
+        $package->detail = $request->detail;
         $package->save();
 
         return back()->with('success', 'Paket kursus baru berhasil ditambahkan.');
@@ -57,10 +90,8 @@ class SettingController extends Controller
             $file = $request->file('foto');
             $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan disk 'public'
             $file->storeAs('uploads/branches', $filename, 'public');
 
-            // 🔥 SOLUSI TUNTAS: Isi kedua field sekaligus biar Database & Blade sama-sama jalan
             $branch->foto = $filename;
             $branch->foto_cabang = $filename;
         }
@@ -83,7 +114,6 @@ class SettingController extends Controller
             $file = $request->file('image');
             $filename = time() . '_galeri.' . $file->getClientOriginalExtension();
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan disk 'public'
             $file->storeAs('uploads/gallery', $filename, 'public');
 
             $gallery->foto = $filename;
@@ -96,7 +126,6 @@ class SettingController extends Controller
     // ================= UPDATE DATA =================
     public function updatePackage(Request $request, $id)
     {
-        // 🔥 Tambahan validasi transmisi, kategori, dan detail
         $request->validate([
             'nama_package' => 'required',
             'pertemuan' => 'required|numeric',
@@ -133,7 +162,6 @@ class SettingController extends Controller
         $branch->lokasi = $request->lokasi;
         $branch->detail = $request->detail;
 
-        // 🔥 FIX: Injeksi data baru saat Tambah Cabang
         $branch->link_gmaps = $request->link_gmaps;
         $branch->no_telp_admin = $request->no_telp_admin;
 
@@ -141,7 +169,6 @@ class SettingController extends Controller
             $file = $request->file('foto');
             $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan disk 'public'
             $file->storeAs('uploads/branches', $filename, 'public');
 
             $branch->foto = $filename;
@@ -168,12 +195,10 @@ class SettingController extends Controller
         $branch->lokasi = $request->lokasi;
         $branch->detail = $request->detail;
 
-        // 🔥 FIX: Injeksi data baru saat Edit Cabang agar tersimpan di Database
         $branch->link_gmaps = $request->link_gmaps;
         $branch->no_telp_admin = $request->no_telp_admin;
 
         if ($request->hasFile('foto')) {
-            // 🔥 PERBAIKAN LOGIC HAPUS: Menggunakan Storage agar selaras dengan lokasi file
             if ($branch->foto && Storage::disk('public')->exists('uploads/branches/' . $branch->foto)) {
                 Storage::disk('public')->delete('uploads/branches/' . $branch->foto);
             }
@@ -181,7 +206,6 @@ class SettingController extends Controller
             $file = $request->file('foto');
             $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan disk 'public'
             $file->storeAs('uploads/branches', $filename, 'public');
 
             $branch->foto = $filename;
@@ -203,7 +227,6 @@ class SettingController extends Controller
         $gallery->judul = $request->judul;
 
         if ($request->hasFile('image')) {
-            // 🔥 PERBAIKAN LOGIC HAPUS: Menggunakan Storage agar selaras dengan lokasi file
             if ($gallery->foto && Storage::disk('public')->exists('uploads/gallery/' . $gallery->foto)) {
                 Storage::disk('public')->delete('uploads/gallery/' . $gallery->foto);
             }
@@ -211,7 +234,6 @@ class SettingController extends Controller
             $file = $request->file('image');
             $filename = time() . '_galeri.' . $file->getClientOriginalExtension();
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan disk 'public'
             $file->storeAs('uploads/gallery', $filename, 'public');
 
             $gallery->foto = $filename;
@@ -230,7 +252,6 @@ class SettingController extends Controller
 
         if ($type == 'branch') {
             $branch = Branch::findOrFail($id);
-            // 🔥 PERBAIKAN LOGIC HAPUS: Membersihkan file fisik secara permanen dari Storage
             if ($branch->foto && Storage::disk('public')->exists('uploads/branches/' . $branch->foto)) {
                 Storage::disk('public')->delete('uploads/branches/' . $branch->foto);
             }
@@ -239,7 +260,6 @@ class SettingController extends Controller
 
         if ($type == 'gallery') {
             $gallery = Gallery::findOrFail($id);
-            // 🔥 PERBAIKAN LOGIC HAPUS: Membersihkan file fisik secara permanen dari Storage
             if ($gallery->foto && Storage::disk('public')->exists('uploads/gallery/' . $gallery->foto)) {
                 Storage::disk('public')->delete('uploads/gallery/' . $gallery->foto);
             }

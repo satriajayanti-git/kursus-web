@@ -20,7 +20,8 @@
 <body>
     <div class="sidebar p-3 shadow-sm">
         <div class="text-center py-4 mb-4">
-            <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
+            <!-- 🔥 Logo Path sudah menggunakan storage -->
+            <img src="{{ asset('storage/uploads/settings/'.($setting->logo ?? 'default.png')) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
         </div>
         <nav>
             <small class="text-uppercase text-muted fw-bold px-3" style="font-size: 0.7rem;">Main Menu</small>
@@ -39,10 +40,22 @@
     </div>
 
     <div class="main-content">
-        <header class="mb-5">
+        <header class="mb-4">
             <h3 class="fw-bold text-dark m-0">Pengaturan Sistem</h3>
             <p class="text-muted m-0">Kelola paket kursus, cabang, galeri, dan identitas Satria Jayanti.</p>
         </header>
+
+        <!-- 🔥 INI PENANGKAP ERROR: Biar tau kalau gambar kebesaran atau form salah -->
+        @if($errors->any())
+            <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4">
+                <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Terjadi Kesalahan:</div>
+                <ul class="mb-0 small">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         @if(session('success'))
             <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}</div>
@@ -181,6 +194,7 @@
                                 @forelse($branches as $b)
                                 <tr>
                                     <td style="width: 80px;">
+                                        <!-- 🔥 Path cabang sudah fix -->
                                         <img src="{{ asset('storage/uploads/branches/'. ($b->foto ?? $b->foto_cabang)) }}" class="rounded-3 shadow-sm border" style="width: 70px; height: 50px; object-fit: cover;">
                                     </td>
                                     <td>
@@ -220,7 +234,6 @@
                                                         <label class="small fw-bold text-muted mb-1">Detail Kontak Tambahan</label>
                                                         <input type="text" name="detail" class="form-control bg-light" value="{{ $b->detail }}">
                                                     </div>
-                                                    
                                                     <div class="mb-3">
                                                         <label class="small fw-bold text-muted mb-1">Link Google Maps</label>
                                                         <div class="input-group shadow-sm">
@@ -228,7 +241,6 @@
                                                             <input type="url" name="link_gmaps" class="form-control border-start-0" value="{{ $b->link_gmaps }}" placeholder="https://maps.app.goo.gl/...">
                                                         </div>
                                                     </div>
-                                                    
                                                     <div class="mb-3">
                                                         <label class="small fw-bold text-muted mb-1">WhatsApp Admin Cabang</label>
                                                         <div class="input-group shadow-sm">
@@ -236,7 +248,6 @@
                                                             <input type="text" name="no_telp_admin" class="form-control border-start-0" value="{{ $b->no_telp_admin }}" placeholder="Contoh: 081234567890">
                                                         </div>
                                                     </div>
-
                                                     <div class="mb-0">
                                                         <label class="small fw-bold text-muted mb-1">Ganti Foto Cabang (Opsional)</label>
                                                         <input type="file" name="foto" class="form-control" accept="image/*">
@@ -293,6 +304,7 @@
                     <div class="row g-2 px-4 pb-4">
                         @foreach($galleries as $g)
                         <div class="col-4 position-relative group">
+                            <!-- 🔥 Path Galeri Fix -->
                             <img src="{{ asset('storage/uploads/gallery/'.$g->foto) }}" class="rounded-3 shadow-sm w-100 object-fit-cover" style="height: 80px;">
                             <div class="position-absolute top-0 end-0 p-1">
                                 <form action="{{ url('/admin/settings/delete/gallery/'.$g->id) }}" method="POST">@csrf @method('DELETE')
@@ -310,11 +322,13 @@
                         @csrf
                         <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Nama Aplikasi/PT</label>
-                            <input type="text" name="nama_app" class="form-control" value="{{ $setting->nama_app ?? 'Satria Jayanti' }}" required>
+                            <!-- 🔥 BUG FIXED: Sebelumnya name="nama_app", sekarang name="nama_website" sesuai controller -->
+                            <input type="text" name="nama_website" class="form-control" value="{{ $setting->nama_website ?? 'Satria Jayanti' }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Ganti Logo Perusahaan</label>
-                            <input type="file" name="logo" class="form-control">
+                            <!-- Pastikan gambar gak lebih dari 2MB biar gak kena validasi max:2048 di controller -->
+                            <input type="file" name="logo" class="form-control" accept="image/*">
                         </div>
                         <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold py-2 mt-2 shadow-sm">Simpan Identitas</button>
                     </form>
@@ -323,6 +337,7 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH PAKET -->
     <div class="modal fade" id="modalTambahPaket" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 shadow-lg">
@@ -377,12 +392,83 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH CABANG -->
     <div class="modal fade" id="modalTambahCabang" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow-lg"><form action="{{ url('/admin/settings/add-branch') }}" method="POST" enctype="multipart/form-data">@csrf<div class="modal-header border-0"><h5 class="fw-bold mb-0">Daftarkan Cabang Baru</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="small fw-bold text-muted mb-1">Nama Cabang</label><input type="text" name="nama_cabang" class="form-control rounded-3" required></div><div class="mb-3"><label class="small fw-bold text-muted mb-1">Alamat/Lokasi</label><input type="text" name="lokasi" class="form-control rounded-3" required></div><div class="mb-3"><label class="small fw-bold text-muted mb-1">Detail Kontak</label><input type="text" name="detail" class="form-control rounded-3"></div><div class="mb-0"><label class="small fw-bold text-muted mb-1">Foto Cabang</label><input type="file" name="foto" class="form-control rounded-3" required></div></div><div class="modal-footer border-0"><button type="submit" class="btn btn-danger w-100 rounded-pill fw-bold">Simpan Cabang</button></div></form></div></div>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <form action="{{ url('/admin/settings/add-branch') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header border-0">
+                        <h5 class="fw-bold mb-0">Daftarkan Cabang Baru</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Nama Cabang</label>
+                            <input type="text" name="nama_cabang" class="form-control rounded-3" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Alamat/Lokasi Lengkap</label>
+                            <input type="text" name="lokasi" class="form-control rounded-3" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Detail Kontak Tambahan</label>
+                            <input type="text" name="detail" class="form-control rounded-3">
+                        </div>
+                        <!-- 🔥 BUG FIXED: Gmaps & WA disisipkan agar data tersimpan rapih ke Landing Page -->
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Link Google Maps (Opsional)</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white"><i class="bi bi-geo-alt-fill text-danger"></i></span>
+                                <input type="url" name="link_gmaps" class="form-control border-start-0" placeholder="https://maps.app.goo.gl/...">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">WhatsApp Admin Cabang (Opsional)</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white"><i class="bi bi-whatsapp text-success"></i></span>
+                                <input type="text" name="no_telp_admin" class="form-control border-start-0" placeholder="Contoh: 081234567890">
+                            </div>
+                        </div>
+                        <div class="mb-0">
+                            <label class="small fw-bold text-muted mb-1">Foto Cabang</label>
+                            <input type="file" name="foto" class="form-control rounded-3" accept="image/*" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="submit" class="btn btn-danger w-100 rounded-pill fw-bold">Simpan Cabang</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
+    <!-- MODAL TAMBAH GALLERY -->
     <div class="modal fade" id="modalTambahGallery" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow-lg"><form action="{{ url('/admin/settings/add-gallery') }}" method="POST" enctype="multipart/form-data">@csrf<div class="modal-header border-0"><h5 class="fw-bold mb-0">Tambah Foto Galeri</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-4"><div class="mb-3"><label class="small fw-bold text-muted mb-1">Judul Foto</label><input type="text" name="judul" class="form-control rounded-3" required></div><div class="mb-0"><label class="small fw-bold text-muted mb-1">File Gambar</label><input type="file" name="image" class="form-control rounded-3" required></div></div><div class="modal-footer border-0"><button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">Unggah Sekarang</button></div></form></div></div>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <form action="{{ url('/admin/settings/add-gallery') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header border-0">
+                        <h5 class="fw-bold mb-0">Tambah Foto Galeri</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted mb-1">Judul Foto</label>
+                            <input type="text" name="judul" class="form-control rounded-3" required>
+                        </div>
+                        <div class="mb-0">
+                            <label class="small fw-bold text-muted mb-1">File Gambar (Maks 2MB)</label>
+                            <input type="file" name="image" class="form-control rounded-3" accept="image/*" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold">Unggah Sekarang</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
