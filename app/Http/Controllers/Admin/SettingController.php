@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\{Setting, Package, Branch, Gallery};
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Storage; 
 
 class SettingController extends Controller
 {
@@ -19,7 +19,6 @@ class SettingController extends Controller
         ]);
     }
 
-    // 🔥 FUNGSI YANG HILANG TELAH DIKEMBALIKAN (Update Logo & Nama Web)
     public function updateGeneral(Request $request)
     {
         $request->validate([
@@ -35,14 +34,13 @@ class SettingController extends Controller
         $setting->nama_website = $request->nama_website;
 
         if ($request->hasFile('logo')) {
-            // Hapus logo lama jika ada menggunakan Storage
             if ($setting->logo && Storage::disk('public')->exists('uploads/settings/' . $setting->logo)) {
                 Storage::disk('public')->delete('uploads/settings/' . $setting->logo);
             }
 
             $file = $request->file('logo');
             $filename = time() . '_logo.' . $file->getClientOriginalExtension();
-
+            
             // Simpan ke storage/app/public/uploads/settings
             $file->storeAs('uploads/settings', $filename, 'public');
 
@@ -53,7 +51,6 @@ class SettingController extends Controller
         return back()->with('success', 'Pengaturan umum dan logo berhasil diperbarui.');
     }
 
-    // ================= TAMBAH DATA =================
     public function addPackage(Request $request)
     {
         $request->validate([
@@ -69,9 +66,9 @@ class SettingController extends Controller
         $package->nama_package = $request->nama_package;
         $package->pertemuan = $request->pertemuan;
         $package->harga = $request->harga;
-        $package->transmisi = $request->transmisi;
-        $package->kategori = $request->kategori;
-        $package->detail = $request->detail;
+        $package->transmisi = $request->transmisi; 
+        $package->kategori = $request->kategori;   
+        $package->detail = $request->detail;       
         $package->save();
 
         return back()->with('success', 'Paket kursus baru berhasil ditambahkan.');
@@ -79,12 +76,18 @@ class SettingController extends Controller
 
     public function addBranch(Request $request)
     {
-        $request->validate(['nama_cabang' => 'required', 'lokasi' => 'required', 'foto' => 'required|image|mimes:jpeg,png,jpg']);
+        $request->validate([
+            'nama_cabang' => 'required', 
+            'lokasi' => 'required', 
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
 
         $branch = new Branch();
         $branch->nama_cabang = $request->nama_cabang;
         $branch->lokasi = $request->lokasi;
         $branch->detail = $request->detail;
+        $branch->link_gmaps = $request->link_gmaps;
+        $branch->no_telp_admin = $request->no_telp_admin;
 
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
@@ -92,6 +95,7 @@ class SettingController extends Controller
 
             $file->storeAs('uploads/branches', $filename, 'public');
 
+            // 🔥 MENGISI KEDUANYA SEKALIGUS (Menghindari error kolom foto_cabang yang wajib diisi)
             $branch->foto = $filename;
             $branch->foto_cabang = $filename;
         }
@@ -104,7 +108,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'judul' => 'required|string|max:255',
-            'image' => 'required|image|mimes:jpeg,png,jpg'
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         $gallery = new Gallery();
@@ -114,6 +118,7 @@ class SettingController extends Controller
             $file = $request->file('image');
             $filename = time() . '_galeri.' . $file->getClientOriginalExtension();
 
+            // Simpan ke storage/app/public/uploads/gallery
             $file->storeAs('uploads/gallery', $filename, 'public');
 
             $gallery->foto = $filename;
@@ -123,7 +128,6 @@ class SettingController extends Controller
         return back()->with('success', 'Foto berhasil diunggah ke galeri kegiatan.');
     }
 
-    // ================= UPDATE DATA =================
     public function updatePackage(Request $request, $id)
     {
         $request->validate([
@@ -149,43 +153,15 @@ class SettingController extends Controller
 
     public function storeBranch(Request $request)
     {
-        $request->validate([
-            'nama_cabang' => 'required',
-            'lokasi' => 'required',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg',
-            'link_gmaps' => 'nullable|url',
-            'no_telp_admin' => 'nullable|string|max:20'
-        ]);
-
-        $branch = new Branch();
-        $branch->nama_cabang = $request->nama_cabang;
-        $branch->lokasi = $request->lokasi;
-        $branch->detail = $request->detail;
-
-        $branch->link_gmaps = $request->link_gmaps;
-        $branch->no_telp_admin = $request->no_telp_admin;
-
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
-
-            $file->storeAs('uploads/branches', $filename, 'public');
-
-            $branch->foto = $filename;
-            $branch->foto_cabang = $filename;
-        }
-
-        $branch->save();
-        return back()->with('success', 'Cabang baru berhasil ditambahkan.');
+        return $this->addBranch($request);
     }
 
-    // ================= EDIT DATA (UPDATE) =================
     public function updateBranch(Request $request, $id)
     {
         $request->validate([
             'nama_cabang' => 'required',
             'lokasi' => 'required',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'link_gmaps' => 'nullable|url',
             'no_telp_admin' => 'nullable|string|max:20'
         ]);
@@ -194,13 +170,14 @@ class SettingController extends Controller
         $branch->nama_cabang = $request->nama_cabang;
         $branch->lokasi = $request->lokasi;
         $branch->detail = $request->detail;
-
         $branch->link_gmaps = $request->link_gmaps;
         $branch->no_telp_admin = $request->no_telp_admin;
 
         if ($request->hasFile('foto')) {
-            if ($branch->foto && Storage::disk('public')->exists('uploads/branches/' . $branch->foto)) {
-                Storage::disk('public')->delete('uploads/branches/' . $branch->foto);
+            // Hapus foto lama dari storage jika ada
+            $oldFoto = $branch->foto ?? $branch->foto_cabang;
+            if ($oldFoto && Storage::disk('public')->exists('uploads/branches/' . $oldFoto)) {
+                Storage::disk('public')->delete('uploads/branches/' . $oldFoto);
             }
 
             $file = $request->file('foto');
@@ -208,6 +185,7 @@ class SettingController extends Controller
 
             $file->storeAs('uploads/branches', $filename, 'public');
 
+            // 🔥 UPDATE KEDUA FIELD SEKALIGUS
             $branch->foto = $filename;
             $branch->foto_cabang = $filename;
         }
@@ -220,7 +198,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'judul' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         $gallery = Gallery::findOrFail($id);
@@ -243,7 +221,6 @@ class SettingController extends Controller
         return back()->with('success', 'Data foto galeri berhasil diperbarui.');
     }
 
-    // ================= HAPUS DATA =================
     public function deleteItem($type, $id)
     {
         if ($type == 'package') {
@@ -252,8 +229,9 @@ class SettingController extends Controller
 
         if ($type == 'branch') {
             $branch = Branch::findOrFail($id);
-            if ($branch->foto && Storage::disk('public')->exists('uploads/branches/' . $branch->foto)) {
-                Storage::disk('public')->delete('uploads/branches/' . $branch->foto);
+            $oldFoto = $branch->foto ?? $branch->foto_cabang;
+            if ($oldFoto && Storage::disk('public')->exists('uploads/branches/' . $oldFoto)) {
+                Storage::disk('public')->delete('uploads/branches/' . $oldFoto);
             }
             $branch->delete();
         }
