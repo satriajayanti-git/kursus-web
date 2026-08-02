@@ -166,8 +166,8 @@
                                                 
                                                 @if($p->bukti_bayar)
                                                     <p class="small fw-bold text-muted mb-2">Bukti Transfer Saat Ini</p>
-                                                    <a href="{{ asset('uploads/bukti/'.$p->bukti_bayar) }}" target="_blank">
-                                                        <img src="{{ asset('uploads/bukti/'.$p->bukti_bayar) }}" class="img-fluid rounded border mb-4" style="max-height: 200px;">
+                                                    <a href="{{ asset('storage/uploads/bukti/'.$p->bukti_bayar) }}" target="_blank">
+                                                        <img src="{{ asset('storage/uploads/bukti/'.$p->bukti_bayar) }}" class="img-fluid rounded border mb-4" style="max-height: 200px;">
                                                     </a>
                                                 @else
                                                     <div class="bg-light p-3 rounded mb-4 text-muted border border-warning text-start shadow-sm">

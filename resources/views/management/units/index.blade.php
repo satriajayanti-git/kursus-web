@@ -25,7 +25,7 @@
     <div class="sidebar bg-white border-end d-flex flex-column" style="width: 280px; min-height: 100vh; position: fixed; top: 0; z-index: 1000;">
         <div class="sidebar-logo text-center p-4 border-bottom">
             @if(isset($setting) && $setting->logo)
-                <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="50" alt="Logo">
+                <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="50" alt="Logo">
             @else
                 <h4 class="fw-bold text-primary mb-0"><i class="bi bi-steering me-2"></i>Satria Jayanti</h4>
             @endif
@@ -138,7 +138,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="me-3 position-relative">
                                                 @if($unit->foto_unit)
-                                                    <img src="{{ asset('uploads/units/'.$unit->foto_unit) }}" alt="Mobil" class="rounded-3 object-fit-cover shadow-sm" style="width: 80px; height: 60px;">
+                                                    <img src="{{ asset('storage/uploads/units/'.$unit->foto_unit) }}" alt="Mobil" class="rounded-3 object-fit-cover shadow-sm" style="width: 80px; height: 60px;">
                                                 @else
                                                     <div class="bg-primary text-white rounded-3 d-flex justify-content-center align-items-center shadow-sm" style="width: 80px; height: 60px;">
                                                         <i class="bi bi-car-front-fill fs-4"></i>

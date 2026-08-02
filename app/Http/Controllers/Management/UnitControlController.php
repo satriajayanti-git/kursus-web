@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Management;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\{Unit, LaporanUnit, Jadwal}; 
-use Illuminate\Support\Facades\File;
+use App\Models\{Unit, LaporanUnit, Jadwal};
+use Illuminate\Support\Facades\Storage; // 🔥 Mengganti File dengan Storage
 use Carbon\Carbon;
 
 class UnitControlController extends Controller
@@ -13,7 +13,7 @@ class UnitControlController extends Controller
     public function index()
     {
         $units = Unit::with(['branch', 'instruktur'])->orderBy('created_at', 'desc')->get();
-        
+
         $laporans = LaporanUnit::with(['unit', 'instruktur'])
             ->orderByRaw("FIELD(status_laporan, 'Menunggu', 'Diproses', 'Selesai')")
             ->orderBy('created_at', 'desc')
@@ -27,7 +27,7 @@ class UnitControlController extends Controller
         $request->validate([
             'nama_mobil' => 'required|string|max:255',
             'nopol' => 'required|string|max:50',
-            'transmisi' => 'required|in:Manual,Matic,Manual & Matic', // 🔥 Validasi Transmisi
+            'transmisi' => 'required|in:Manual,Matic,Manual & Matic',
             'foto_unit' => 'required|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
@@ -35,13 +35,15 @@ class UnitControlController extends Controller
         if ($request->hasFile('foto_unit')) {
             $file = $request->file('foto_unit');
             $namaFile = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-            $file->move(public_path('uploads/units'), $namaFile);
+
+            // 🔥 PERBAIKAN: Menambahkan parameter 'public' agar tersimpan di storage/app/public
+            $file->storeAs('uploads/units', $namaFile, 'public');
         }
 
         Unit::create([
             'nama_mobil' => $request->nama_mobil,
             'nopol' => $request->nopol,
-            'transmisi' => $request->transmisi, // 🔥 Simpan Transmisi
+            'transmisi' => $request->transmisi,
             'foto_unit' => $namaFile,
             'status_operasional' => 'Aktif',
             'status_kepemilikan' => 'Rolling'
@@ -57,28 +59,33 @@ class UnitControlController extends Controller
         $request->validate([
             'nama_mobil' => 'required|string|max:255',
             'nopol' => 'required|string|max:50',
-            'transmisi' => 'required|in:Manual,Matic,Manual & Matic', // 🔥 Validasi Transmisi
-            'status_operasional' => 'nullable|in:Aktif,Maintenance', 
+            'transmisi' => 'required|in:Manual,Matic,Manual & Matic',
+            'status_operasional' => 'nullable|in:Aktif,Maintenance',
             'foto_unit' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
         $data = [
             'nama_mobil' => $request->nama_mobil,
             'nopol' => $request->nopol,
-            'transmisi' => $request->transmisi, // 🔥 Update Transmisi
+            'transmisi' => $request->transmisi,
         ];
 
-        if($request->filled('status_operasional')){
+        if ($request->filled('status_operasional')) {
             $data['status_operasional'] = $request->status_operasional;
         }
 
         if ($request->hasFile('foto_unit')) {
-            if ($unit->foto_unit && File::exists(public_path('uploads/units/'.$unit->foto_unit))) {
-                File::delete(public_path('uploads/units/'.$unit->foto_unit));
+            // 🔥 PERBAIKAN LOGIC HAPUS: Menggunakan Storage agar selaras dengan lokasi file yang baru
+            if ($unit->foto_unit && Storage::disk('public')->exists('uploads/units/' . $unit->foto_unit)) {
+                Storage::disk('public')->delete('uploads/units/' . $unit->foto_unit);
             }
+
             $file = $request->file('foto_unit');
             $namaFile = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-            $file->move(public_path('uploads/units'), $namaFile);
+
+            // 🔥 PERBAIKAN: Menambahkan parameter 'public'
+            $file->storeAs('uploads/units', $namaFile, 'public');
+
             $data['foto_unit'] = $namaFile;
         }
 
@@ -90,9 +97,10 @@ class UnitControlController extends Controller
     public function destroy($id)
     {
         $unit = Unit::findOrFail($id);
-        
-        if ($unit->foto_unit && File::exists(public_path('uploads/units/'.$unit->foto_unit))) {
-            File::delete(public_path('uploads/units/'.$unit->foto_unit));
+
+        // 🔥 PERBAIKAN LOGIC HAPUS: Membersihkan file fisik secara permanen dari Storage
+        if ($unit->foto_unit && Storage::disk('public')->exists('uploads/units/' . $unit->foto_unit)) {
+            Storage::disk('public')->delete('uploads/units/' . $unit->foto_unit);
         }
 
         $unit->delete();
@@ -107,7 +115,7 @@ class UnitControlController extends Controller
         ]);
 
         $laporan = LaporanUnit::findOrFail($id);
-        
+
         $laporan->update(['status_laporan' => $request->status_laporan]);
 
         if ($request->status_laporan == 'Selesai') {

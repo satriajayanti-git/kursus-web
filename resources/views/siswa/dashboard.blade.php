@@ -63,7 +63,7 @@
         <div class="sidebar-desktop border-end d-none d-md-flex flex-column">
             <div class="p-4 border-bottom text-center">
                 @if($setting && $setting->logo)
-                    <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="50" class="mb-2">
+                    <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="50" class="mb-2">
                 @else
                     <h4 class="fw-bold text-primary mb-0"><i class="bi bi-steering me-2"></i>Satria Jayanti</h4>
                 @endif
@@ -99,7 +99,7 @@
             <div class="offcanvas-header border-bottom p-4">
                 <div class="d-flex align-items-center">
                     @if($setting && $setting->logo)
-                        <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="40" class="me-2">
+                        <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="40" class="me-2">
                     @endif
                     <h5 class="fw-bold text-primary mb-0">Satria Jayanti</h5>
                 </div>

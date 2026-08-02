@@ -5,26 +5,26 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
-use App\Models\{Pembayaran, User, Jadwal}; 
+use Illuminate\Support\Facades\Storage; // 🔥 Mengubah dari File menjadi Storage
+use App\Models\{Pembayaran, User, Jadwal};
 
 class KeuanganController extends Controller
 {
     public function index(Request $request)
     {
         $user = Auth::user();
-        
+
         if (!$user->branch_id) {
             return redirect('/admin/dashboard')->with('error', 'Akun Anda belum ditugaskan ke cabang manapun!');
         }
 
-        $bulan = $request->bulan ?? date('Y-m'); 
+        $bulan = $request->bulan ?? date('Y-m');
         $status_bayar = $request->status_bayar ?? '';
         $search = $request->search;
 
         $query = Pembayaran::with(['user', 'package'])
-                        ->where('branch_id', $user->branch_id);
-        
+            ->where('branch_id', $user->branch_id);
+
         $tahun = date('Y', strtotime($bulan));
         $bulan_angka = date('m', strtotime($bulan));
         $query->whereYear('created_at', $tahun)->whereMonth('created_at', $bulan_angka);
@@ -34,22 +34,22 @@ class KeuanganController extends Controller
         }
 
         if (!empty($search)) {
-            $query->where(function($q) use ($search) {
-                $q->whereHas('user', function($qUser) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($qUser) use ($search) {
                     $qUser->where('nama_lengkap', 'like', '%' . $search . '%')
-                          ->orWhere('username', 'like', '%' . $search . '%')
-                          ->orWhere('id_siswa', 'like', '%' . $search . '%');
+                        ->orWhere('username', 'like', '%' . $search . '%')
+                        ->orWhere('id_siswa', 'like', '%' . $search . '%');
                 });
             });
         }
 
         $pembayarans = $query->orderBy('created_at', 'desc')->get();
-        
+
         $total_omset = Pembayaran::where('branch_id', $user->branch_id)
-                                ->where('status', 'Lunas')
-                                ->whereYear('created_at', $tahun)
-                                ->whereMonth('created_at', $bulan_angka)
-                                ->sum('total_tagihan');
+            ->where('status', 'Lunas')
+            ->whereYear('created_at', $tahun)
+            ->whereMonth('created_at', $bulan_angka)
+            ->sum('total_tagihan');
 
         $siswas = User::where('role', 'siswa')->where('branch_id', $user->branch_id)->get();
 
@@ -62,42 +62,45 @@ class KeuanganController extends Controller
         $request->validate([
             'status' => 'required|in:Pending,Lunas,Ditolak',
             'penolakan' => 'nullable|string',
-            'bukti_bayar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
-            'metode_pembayaran' => 'nullable|string' // 🔥 Tambahan validasi metode pembayaran
+            'bukti_bayar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'metode_pembayaran' => 'nullable|string'
         ]);
 
         $pembayaran = Pembayaran::findOrFail($id);
-        
+
         $data = [
             'status' => $request->status,
         ];
 
         // 1. Eksekusi Penolakan
         if ($request->status == 'Ditolak') {
-            $data['penolakan'] = $request->penolakan; 
+            $data['penolakan'] = $request->penolakan;
         } else {
-            $data['penolakan'] = null; 
+            $data['penolakan'] = null;
         }
 
         // 2. Eksekusi Upload Bukti (Jika Admin melampirkan file)
         if ($request->hasFile('bukti_bayar')) {
-            if ($pembayaran->bukti_bayar && File::exists(public_path('uploads/bukti/'.$pembayaran->bukti_bayar))) {
-                File::delete(public_path('uploads/bukti/'.$pembayaran->bukti_bayar));
+            // 🔥 PERBAIKAN: Gunakan Storage facade untuk mengecek dan menghapus bukti lama
+            if ($pembayaran->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $pembayaran->bukti_bayar)) {
+                Storage::disk('public')->delete('uploads/bukti/' . $pembayaran->bukti_bayar);
             }
-            
+
             $file = $request->file('bukti_bayar');
             $namaFile = time() . '_admin_upload_' . str_replace(' ', '_', $file->getClientOriginalName());
-            $file->move(public_path('uploads/bukti'), $namaFile); 
+
+            // 🔥 PERBAIKAN: Gunakan storeAs dengan parameter 'public' agar masuk ke storage/app/public/uploads/bukti
+            $file->storeAs('uploads/bukti', $namaFile, 'public');
 
             $data['bukti_bayar'] = $namaFile;
         }
 
-        // 🔥 3. Eksekusi Injeksi Keterangan Metode Pembayaran (Trik Tanpa Rombak DB)
+        // 3. Eksekusi Injeksi Keterangan Metode Pembayaran (Trik Tanpa Rombak DB)
         if ($request->filled('metode_pembayaran')) {
             $keteranganUpdate = $pembayaran->keterangan;
             // Bersihkan format (Via ...) yang lama agar tidak ada teks duplikat di database
             $keteranganUpdate = preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $keteranganUpdate);
-            
+
             // Masukkan format metode baru
             $data['keterangan'] = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
         }
@@ -108,7 +111,7 @@ class KeuanganController extends Controller
         // 5. OTOMATISASI SINKRONISASI: Akun siswa otomatis 'Aktif' jika Paket Utama disetujui Lunas
         if ($pembayaran->jenis_tagihan === 'Paket Utama') {
             $siswa = User::find($pembayaran->user_id);
-            
+
             if ($siswa) {
                 if ($request->status === 'Lunas') {
                     $siswa->update(['status' => 'Aktif']);
@@ -144,18 +147,18 @@ class KeuanganController extends Controller
     public function generateReport(Request $request)
     {
         $request->validate([
-            'tgl_mulai' => 'required|date', 
+            'tgl_mulai' => 'required|date',
             'tgl_akhir' => 'required|date|after_or_equal:tgl_mulai'
         ]);
-        
+
         $user = Auth::user();
 
         $data = Pembayaran::with(['user', 'package'])
-                ->where('branch_id', $user->branch_id)
-                ->where('status', 'Lunas')
-                ->whereBetween('updated_at', [$request->tgl_mulai . ' 00:00:00', $request->tgl_akhir . ' 23:59:59'])
-                ->orderBy('updated_at', 'asc')
-                ->get();
+            ->where('branch_id', $user->branch_id)
+            ->where('status', 'Lunas')
+            ->whereBetween('updated_at', [$request->tgl_mulai . ' 00:00:00', $request->tgl_akhir . ' 23:59:59'])
+            ->orderBy('updated_at', 'asc')
+            ->get();
 
         return view('admin.keuangan.report', compact('data'));
     }

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\{Pembayaran, Jadwal, Setting, User};
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -45,13 +45,16 @@ class DashboardController extends Controller
         $tagihan = Pembayaran::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         
         if ($request->hasFile('bukti_bayar')) {
-            if ($tagihan->bukti_bayar && File::exists(public_path('uploads/bukti/'.$tagihan->bukti_bayar))) {
-                File::delete(public_path('uploads/bukti/'.$tagihan->bukti_bayar));
+            // 🔥 PERBAIKAN LOGIC HAPUS: Cek dan hapus file lama menggunakan Storage facade
+            if ($tagihan->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $tagihan->bukti_bayar)) {
+                Storage::disk('public')->delete('uploads/bukti/' . $tagihan->bukti_bayar);
             }
             
             $file = $request->file('bukti_bayar');
             $namaFile = time() . '_bukti_' . $id . '_' . $user->id . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/bukti'), $namaFile);
+            
+            // 🔥 PERBAIKAN UPLOAD: Gunakan storeAs dengan disk 'public' agar masuk ke storage/app/public/uploads/bukti
+            $file->storeAs('uploads/bukti', $namaFile, 'public');
             
             // 🔥 TRIK PINTAR: Sisipkan info Bank ke dalam Keterangan agar Admin bisa langsung baca tanpa rombak Database
             $keteranganUpdate = $tagihan->keterangan;
@@ -66,6 +69,7 @@ class DashboardController extends Controller
                 'keterangan' => $keteranganUpdate 
             ]);
         }
+        
         return back()->with('success', 'Bukti pembayaran berhasil diunggah! Mohon lakukan konfirmasi ke Admin.');
     }
 

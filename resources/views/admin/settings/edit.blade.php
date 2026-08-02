@@ -20,7 +20,7 @@
 <body>
     <div class="sidebar p-3 shadow-sm">
         <div class="text-center py-4 mb-4">
-            <img src="{{ asset('uploads/settings/'.$setting->logo) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
+            <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
         </div>
         <nav>
             <small class="text-uppercase text-muted fw-bold px-3" style="font-size: 0.7rem;">Main Menu</small>
@@ -181,7 +181,7 @@
                                 @forelse($branches as $b)
                                 <tr>
                                     <td style="width: 80px;">
-                                        <img src="{{ asset('uploads/branches/'. ($b->foto ?? $b->foto_cabang)) }}" class="rounded-3 shadow-sm border" style="width: 70px; height: 50px; object-fit: cover;">
+                                        <img src="{{ asset('storage/uploads/branches/'. ($b->foto ?? $b->foto_cabang)) }}" class="rounded-3 shadow-sm border" style="width: 70px; height: 50px; object-fit: cover;">
                                     </td>
                                     <td>
                                         <h6 class="fw-bold text-dark mb-1">{{ $b->nama_cabang }}</h6>
@@ -293,7 +293,7 @@
                     <div class="row g-2 px-4 pb-4">
                         @foreach($galleries as $g)
                         <div class="col-4 position-relative group">
-                            <img src="{{ asset('uploads/gallery/'.$g->foto) }}" class="rounded-3 shadow-sm w-100 object-fit-cover" style="height: 80px;">
+                            <img src="{{ asset('storage/uploads/gallery/'.$g->foto) }}" class="rounded-3 shadow-sm w-100 object-fit-cover" style="height: 80px;">
                             <div class="position-absolute top-0 end-0 p-1">
                                 <form action="{{ url('/admin/settings/delete/gallery/'.$g->id) }}" method="POST">@csrf @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm rounded-circle p-1" style="line-height: 0;"><i class="bi bi-x" style="font-size: 0.8rem;"></i></button>
