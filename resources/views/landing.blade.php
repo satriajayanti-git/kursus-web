@@ -148,19 +148,6 @@
             border: 1px solid rgba(13, 202, 240, 0.08); box-shadow: 0 5px 15px rgba(0,0,0,0.02);
         }
 
-        /* PAKET PELATIHAN */
-        .pricing-card { 
-            background: var(--sj-surface); border: 1px solid #edf2f7; border-radius: 25px; 
-            overflow: hidden; height: 100%;
-        }
-        .pricing-header-top { background-color: var(--sj-primary-soft); padding: 2rem 1.5rem 1.5rem; }
-        .pricing-amount { font-size: 2.2rem; font-weight: 800; color: var(--sj-dark); }
-
-        /* CABANG */
-        .branch-modern-card { border-radius: 20px; overflow: hidden; background: var(--sj-surface); height: 100%; border: 1px solid #f1f5f9; }
-        .branch-frame-img { width: 100%; height: 220px; object-fit: cover; transition: 0.5s; }
-        .branch-modern-card:hover .branch-frame-img { transform: scale(1.05); }
-
         /* ALUR PENDAFTARAN - ASSETS FIXED */
         .steps-flow-container { position: relative; padding: 20px 0; }
         @media (min-width: 992px) {
@@ -190,10 +177,54 @@
         .btn-social-wa { background: #25D366; }
         .social-circle-btn:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
 
+        /* 🔥 ULTRA-PREMIUM UI CSS & MOBILE RESPONSIVENESS */
+        .hover-lift { transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); border: 1px solid rgba(0,0,0,0.03); }
+        .hover-lift:hover { transform: translateY(-10px); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.1)!important; border-color: transparent; z-index: 10; }
+        .filter-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-radius: 1.5rem; border: 1px solid rgba(0,0,0,0.05); }
+        .badge-premium { font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 800; }
+        .text-gradient { background: linear-gradient(135deg, #0d6efd 0%, #0043a8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-gradient { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: white; border: none; transition: all 0.3s ease; }
+        .btn-gradient:hover { background: linear-gradient(135deg, #0a58ca 0%, #043f96 100%); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(13, 110, 253, 0.25); color: white; }
+        
+        .branch-modern-card { border-radius: 1.25rem; border: 1px solid rgba(0,0,0,0.05); transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); background: #ffffff; overflow: hidden; }
+        .branch-modern-card:hover { transform: translateY(-8px); box-shadow: 0 1.5rem 4rem rgba(13, 110, 253, 0.12)!important; border-color: #0d6efd; }
+        .branch-frame-img { width: 100%; height: 220px; object-fit: cover; transition: transform 0.5s ease; }
+        .branch-modern-card:hover .branch-frame-img { transform: scale(1.05); }
+        .btn-wa-premium { background: linear-gradient(135deg, #25D366 0%, #1ebe57 100%); color: white; border: none; transition: all 0.3s ease; }
+        .btn-wa-premium:hover { background: linear-gradient(135deg, #1ebe57 0%, #128c7e 100%); color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3); }
+        .btn-maps-premium { background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%); color: white; border: none; transition: all 0.3s ease; }
+        .btn-maps-premium:hover { background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3); }
+
+        /* 🔥 MOBILE OPTIMIZATION RULES */
         @media (max-width: 991px) {
-            .hero-section { padding: 160px 0 80px; text-align: center; }
-            .hero-section p { margin: 0 auto 2rem; }
+            .hero-section { padding: 140px 0 70px; text-align: center; }
+            .hero-section p { margin: 0 auto 2rem; font-size: 1rem; }
             .why-us-description { padding-left: 0; border-left: none; text-align: center; margin: 0 auto 2.5rem; }
+            .navbar-floating { padding: 0.8rem 1.2rem; border-radius: 25px; }
+        }
+
+        @media (max-width: 767px) {
+            .section-header-title { font-size: 1.6rem; }
+            .hero-section { padding: 120px 0 60px; }
+            .hero-badge-modern { padding: 6px 15px; font-size: 0.75rem; }
+            
+            /* Penyesuaian Card & Padding di Mobile */
+            .card-vision-mission { padding: 1.5rem; }
+            .card-icon-header { width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem; }
+            
+            .stat-item-box { padding: 1.2rem 0.5rem; }
+            .stat-item-box h3 { font-size: 1.5rem; }
+            .stat-item-box span { font-size: 0.7rem; }
+            
+            .flow-step-item { padding: 1.5rem 1rem; }
+            .flow-icon-visual { font-size: 2.2rem; margin-bottom: 1rem; }
+            
+            /* Paket & Cabang Card di Mobile */
+            .branch-frame-img { height: 180px; }
+            .gallery-photo-item { height: 160px; } /* Menghindari galeri terlalu memanjang */
+            
+            /* Penyesuaian Tombol di Mobile */
+            .btn-maps-premium, .btn-wa-premium { font-size: 0.8rem; padding-top: 0.6rem; padding-bottom: 0.6rem; }
         }
     </style>
 </head>
@@ -203,6 +234,7 @@
         <nav class="navbar navbar-expand-lg navbar-floating">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center text-decoration-none" href="#">
+                    <!-- 🔥 DIR: storage/uploads ditambahkan -->
                     @if(isset($setting) && $setting->logo)
                         <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" height="35" class="me-2 rounded">
                     @else
@@ -214,12 +246,12 @@
                     <span class="navbar-toggler-icon" style="width: 1.2em; height: 1.2em;"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav mx-auto align-items-center">
-                        <li class="nav-item"><a class="nav-link" href="#profil">Profil</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#paket">Paket</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#cabang">Lokasi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#alur">Alur</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#galeri">Gallery</a></li>
+                    <ul class="navbar-nav mx-auto align-items-center mt-3 mt-lg-0 text-center text-lg-start">
+                        <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#profil">Profil</a></li>
+                        <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#paket">Paket</a></li>
+                        <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#cabang">Lokasi</a></li>
+                        <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#alur">Alur</a></li>
+                        <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#galeri">Gallery</a></li>
                     </ul>
                     <div class="d-flex mt-3 mt-lg-0">
                         <a href="{{ url('/login') }}" class="btn btn-login-portal w-100">Login</a>
@@ -236,7 +268,8 @@
                     <div class="hero-badge-modern"><i class="bi bi-shield-lock-fill me-2"></i>Sekolah Mengemudi Berstandar Nasional</div>
                     <h1>Berkendara Aman,<br>Mulai dari <span>Sini.</span></h1>
                     <p>PT. Satria Jayanti membentuk pengemudi berkarakter, tangkas, dan bertanggung jawab. Dibimbing instruktur profesional dengan armada tersertifikasi.</p>
-                    <a href="{{ url('/register') }}" class="btn btn-primary px-5 py-3 rounded-pill shadow fw-bold border-0" style="background: var(--sj-primary);">Daftar Kursus <i class="bi bi-arrow-right-circle-fill ms-2"></i></a>
+                    <!-- 🔥 Px/Py disesuaikan untuk layar mobile & desktop -->
+                    <a href="{{ url('/register') }}" class="btn btn-primary px-4 py-2 px-md-5 py-md-3 rounded-pill shadow fw-bold border-0" style="background: var(--sj-primary);">Daftar Kursus <i class="bi bi-arrow-right-circle-fill ms-2"></i></a>
                 </div>
             </div>
         </div>
@@ -276,27 +309,27 @@
             <div class="row">
                 <div class="col-lg-12 mb-4 text-center text-lg-start">
                     <h2 class="section-header-title">Mengapa Memilih Kami?</h2>
-                    <div class="section-accent-line start-align mb-4"></div>
+                    <div class="section-accent-line start-align mb-4 mx-auto mx-lg-0"></div>
                     <p class="why-us-description">
                         Kami mengintegrasikan <strong>kurikulum Nasional (SKKNI)</strong> yang berorientasi pada pembentukan karakter. Didukung oleh tenaga pendidik berpengalaman, menguasai medan, dan ditunjang fasilitas memadai untuk membentuk Anda menjadi pengemudi berpengetahuan luas.
                     </p>
                 </div>
             </div>
-            <div class="row g-4 text-center">
+            <div class="row g-3 g-md-4 text-center">
                 <div class="col-4">
-                    <div class="stat-item-box shadow-sm">
+                    <div class="stat-item-box shadow-sm h-100">
                         <h3 class="fw-bold text-primary mb-1">100%</h3>
                         <span class="small fw-bold text-muted text-uppercase tracking-tighter">Safety Focus</span>
                     </div>
                 </div>
                 <div class="col-4">
-                    <div class="stat-item-box shadow-sm">
+                    <div class="stat-item-box shadow-sm h-100">
                         <h3 class="fw-bold text-primary mb-1">PRO</h3>
                         <span class="small fw-bold text-muted text-uppercase tracking-tighter">Certified</span>
                     </div>
                 </div>
                 <div class="col-4">
-                    <div class="stat-item-box shadow-sm">
+                    <div class="stat-item-box shadow-sm h-100">
                         <h3 class="fw-bold text-primary mb-1">SKKNI</h3>
                         <span class="small fw-bold text-muted text-uppercase tracking-tighter">Standard</span>
                     </div>
@@ -304,6 +337,7 @@
             </div>
         </div>
     </section>
+
     <section id="alur" class="py-5">
         <div class="container py-4">
             <div class="text-center mb-5">
@@ -313,28 +347,28 @@
             <div class="steps-flow-container">
                 <div class="steps-connector-dashed"></div>
                 <div class="row g-4">
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="flow-step-item shadow-sm">
                             <div class="flow-icon-visual"><i class="bi bi-person-plus-fill"></i></div>
                             <h6 class="fw-bold mb-2">Buat Akun</h6>
                             <p class="text-muted small mb-0">Daftarkan diri Anda di sistem kami.</p>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="flow-step-item shadow-sm">
                             <div class="flow-icon-visual"><i class="bi bi-ui-checks-grid"></i></div>
                             <h6 class="fw-bold mb-2">Pilih Paket</h6>
                             <p class="text-muted small mb-0">Tentukan paket dan cabang terdekat.</p>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="flow-step-item shadow-sm">
                             <div class="flow-icon-visual"><i class="bi bi-credit-card-2-front-fill"></i></div>
                             <h6 class="fw-bold mb-2">Pembayaran</h6>
                             <p class="text-muted small mb-0">Upload bukti bayar untuk verifikasi.</p>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="flow-step-item shadow-sm">
                             <div class="flow-icon-visual" style="color: var(--sj-primary);">
                                 <i class="bi bi-car-front-fill"></i>
@@ -347,34 +381,22 @@
             </div>
         </div>
     </section>
-   <style>
-    /* 🔥 ULTRA-PREMIUM UI CSS */
-    .hover-lift { transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); border: 1px solid rgba(0,0,0,0.03); }
-    .hover-lift:hover { transform: translateY(-10px); box-shadow: 0 1.5rem 4rem rgba(0,0,0,.1)!important; border-color: transparent; z-index: 10; }
-    .filter-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-radius: 1.5rem; border: 1px solid rgba(0,0,0,0.05); }
-    .badge-premium { font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 800; }
-    .text-gradient { background: linear-gradient(135deg, #0d6efd 0%, #0043a8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .btn-gradient { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: white; border: none; transition: all 0.3s ease; }
-    .btn-gradient:hover { background: linear-gradient(135deg, #0a58ca 0%, #043f96 100%); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(13, 110, 253, 0.25); color: white; }
-    .custom-select-icon { background-color: #f8fafc; border-radius: 0.75rem; transition: 0.3s; }
-    .custom-select-icon:hover { background-color: #e9ecef; }
-</style>
 
 <section id="paket" class="py-5" style="background-color: #f8fafc; position: relative; overflow: hidden;">
-    <div class="position-absolute top-0 start-0 translate-middle rounded-circle" style="width: 400px; height: 400px; background: radial-gradient(circle, rgba(13,110,253,0.05) 0%, rgba(255,255,255,0) 70%);"></div>
-    <div class="position-absolute bottom-0 end-0 translate-middle rounded-circle" style="width: 500px; height: 500px; background: radial-gradient(circle, rgba(25,135,84,0.03) 0%, rgba(255,255,255,0) 70%);"></div>
+    <div class="position-absolute top-0 start-0 translate-middle rounded-circle d-none d-md-block" style="width: 400px; height: 400px; background: radial-gradient(circle, rgba(13,110,253,0.05) 0%, rgba(255,255,255,0) 70%);"></div>
+    <div class="position-absolute bottom-0 end-0 translate-middle rounded-circle d-none d-md-block" style="width: 500px; height: 500px; background: radial-gradient(circle, rgba(25,135,84,0.03) 0%, rgba(255,255,255,0) 70%);"></div>
 
     <div class="container py-4 position-relative z-index-1">
         <div class="text-center mb-5">
             <span class="badge bg-primary-subtle text-primary badge-premium px-3 py-2 mb-2 rounded-pill">Satria Jayanti Driving School</span>
-            <h2 class="fw-bolder text-dark mt-2" style="font-size: 2.5rem; letter-spacing: -1px;">Pilihan Paket Pelatihan</h2>
-            <div class="mx-auto mt-3 mb-4" style="width: 80px; height: 4px; background: linear-gradient(90deg, #0d6efd, #0dcaf0); border-radius: 2px;"></div>
-            <p class="text-muted" style="font-size: 1.1rem;">Sesuaikan kebutuhan belajar mengemudi Anda dengan instruktur profesional kami.</p>
+            <h2 class="fw-bolder text-dark mt-2 section-header-title" style="letter-spacing: -1px;">Pilihan Paket Pelatihan</h2>
+            <div class="mx-auto mt-3 mb-4 section-accent-line"></div>
+            <p class="text-muted" style="font-size: 1rem;">Sesuaikan kebutuhan belajar mengemudi Anda dengan instruktur profesional kami.</p>
         </div>
 
         <div class="row justify-content-center mb-5">
             <div class="col-lg-8">
-                <div class="filter-panel shadow p-2 p-md-3">
+                <div class="filter-panel shadow-sm p-2 p-md-3">
                     <div class="row g-2">
                         <div class="col-md-6 position-relative">
                             <div class="custom-select-icon p-2 h-100">
@@ -405,19 +427,17 @@
         </div>
 
         <div class="row g-4 justify-content-center" id="paketContainer">
-            
             <div class="col-12 text-center py-5" id="initialMessage">
-                <div class="d-inline-flex align-items-center justify-content-center p-4 rounded-circle bg-white shadow-sm mb-4" style="width: 100px; height: 100px;">
-                    <i class="bi bi-hand-index text-primary" style="font-size: 2.5rem;"></i>
+                <div class="d-inline-flex align-items-center justify-content-center p-3 p-md-4 rounded-circle bg-white shadow-sm mb-4" style="width: 80px; height: 80px;">
+                    <i class="bi bi-hand-index text-primary fs-1"></i>
                 </div>
                 <h4 class="fw-bolder text-dark">Tentukan Pilihan Kelas</h4>
-                <p class="text-muted mx-auto" style="max-width: 400px;">Silakan tentukan Kategori dan Transmisi pada panel di atas untuk membuka daftar harga paket eksklusif kami.</p>
+                <p class="text-muted mx-auto" style="max-width: 400px; font-size: 0.95rem;">Silakan tentukan Kategori dan Transmisi pada panel di atas untuk membuka daftar harga paket eksklusif kami.</p>
             </div>
 
             @forelse($packages as $p)
                 <div class="col-md-6 col-lg-4 paket-card d-none" data-kategori="{{ $p->kategori }}" data-transmisi="{{ $p->transmisi }}">
                     <div class="card h-100 bg-white rounded-4 shadow-sm hover-lift overflow-hidden position-relative border-0">
-                        
                         <div class="position-absolute top-0 end-0 mt-3 me-3 z-index-2">
                             @if($p->transmisi == 'Matic')
                                 <span class="badge bg-warning text-dark rounded-pill shadow-sm badge-premium px-3 py-2 border border-warning"><i class="bi bi-gear-wide-connected me-1"></i> Matic</span>
@@ -426,20 +446,20 @@
                             @endif
                         </div>
 
-                        <div class="bg-light pt-4 pb-2 px-4 border-bottom border-light">
+                        <div class="bg-light pt-4 pb-2 px-3 px-md-4 border-bottom border-light">
                             <span class="badge {{ $p->kategori == 'Reguler' ? 'bg-primary' : 'bg-dark' }} badge-premium rounded-pill px-3 py-1 mb-2">
                                 Paket {{ $p->kategori }}
                             </span>
-                            <h5 class="fw-bolder mb-0 text-dark lh-sm" style="font-size: 1.35rem; min-height: 3rem;">{{ $p->nama_package }}</h5>
+                            <h5 class="fw-bolder mb-0 text-dark lh-sm" style="font-size: 1.25rem; min-height: 2.8rem;">{{ $p->nama_package }}</h5>
                         </div>
 
-                        <div class="card-body p-4 d-flex flex-column text-start mt-2">
+                        <div class="card-body p-3 p-md-4 d-flex flex-column text-start mt-2">
                             <div class="mb-4 text-center">
                                 <span class="fs-6 text-muted fw-bold align-top">Rp</span>
-                                <span class="display-5 fw-bolder text-gradient">{{ number_format($p->harga, 0, ',', '.') }}</span>
+                                <span class="fw-bolder text-gradient pricing-amount display-5">{{ number_format($p->harga, 0, ',', '.') }}</span>
                             </div>
 
-                            <ul class="list-unstyled text-muted mb-4 flex-grow-1">
+                            <ul class="list-unstyled text-muted mb-4 flex-grow-1" style="font-size: 0.95rem;">
                                 <li class="mb-3 d-flex align-items-center">
                                     <div class="bg-success-subtle text-success rounded-circle p-1 me-3"><i class="bi bi-check2 d-flex"></i></div>
                                     <span class="fw-bold text-dark">{{ $p->pertemuan }}x Sesi Latihan</span>
@@ -471,11 +491,11 @@
             @endforelse
             
             <div class="col-12 text-center py-5 d-none" id="emptyFilterMessage">
-                <div class="d-inline-flex align-items-center justify-content-center p-4 rounded-circle bg-light mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                <div class="d-inline-flex align-items-center justify-content-center p-3 p-md-4 rounded-circle bg-light mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-search text-muted fs-1"></i>
                 </div>
                 <h5 class="fw-bold text-dark">Paket Tidak Ditemukan</h5>
-                <p class="text-muted mx-auto" style="max-width: 350px;">Maaf, saat ini tidak ada paket yang sesuai dengan kombinasi Kategori dan Transmisi tersebut.</p>
+                <p class="text-muted mx-auto" style="max-width: 350px; font-size: 0.95rem;">Maaf, saat ini tidak ada paket yang sesuai dengan kombinasi Kategori dan Transmisi tersebut.</p>
             </div>
         </div>
     </div>
@@ -542,65 +562,13 @@
     });
 </script>
 
-    <style>
-    .branch-modern-card { 
-        border-radius: 1.25rem; 
-        border: 1px solid rgba(0,0,0,0.05); 
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); 
-        background: #ffffff; 
-        overflow: hidden; 
-    }
-    .branch-modern-card:hover { 
-        transform: translateY(-8px); 
-        box-shadow: 0 1.5rem 4rem rgba(13, 110, 253, 0.12)!important; 
-        border-color: #0d6efd; 
-    }
-    .branch-frame-img { 
-        width: 100%; 
-        height: 220px; 
-        object-fit: cover; 
-        transition: transform 0.5s ease; 
-    }
-    .branch-modern-card:hover .branch-frame-img { 
-        transform: scale(1.05); 
-    }
-    
-    /* Tombol WhatsApp Green Gradient */
-    .btn-wa-premium { 
-        background: linear-gradient(135deg, #25D366 0%, #1ebe57 100%); 
-        color: white; 
-        border: none; 
-        transition: all 0.3s ease; 
-    }
-    .btn-wa-premium:hover { 
-        background: linear-gradient(135deg, #1ebe57 0%, #128c7e 100%); 
-        color: white; 
-        transform: translateY(-2px); 
-        box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3); 
-    }
-    
-    /* 🔥 Tombol Google Maps Premium - Menggunakan Google Brand Blue */
-    .btn-maps-premium { 
-        background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%); 
-        color: white; 
-        border: none; 
-        transition: all 0.3s ease; 
-    }
-    .btn-maps-premium:hover { 
-        background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); 
-        color: white; 
-        transform: translateY(-2px); 
-        box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3); 
-    }
-</style>
-
 <section id="cabang" class="py-5" style="background-color: #f8fafc;">
     <div class="container py-4">
         <div class="text-center mb-5">
             <span class="badge bg-primary-subtle text-primary px-3 py-2 mb-2 rounded-pill fw-bolder text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem;">Jangkauan Kami</span>
-            <h2 class="fw-bolder text-dark mt-2" style="font-size: 2.2rem; letter-spacing: -0.5px;">Lokasi Jaringan Kami</h2>
-            <div class="mx-auto mt-3 mb-3" style="width: 60px; height: 4px; background: linear-gradient(90deg, #0d6efd, #0dcaf0); border-radius: 2px;"></div>
-            <p class="text-muted">Temukan cabang PT. Satria Jayanti terdekat di kota Anda. Kunjungi kami atau hubungi admin secara langsung.</p>
+            <h2 class="fw-bolder text-dark mt-2 section-header-title" style="letter-spacing: -0.5px;">Lokasi Jaringan Kami</h2>
+            <div class="mx-auto mt-3 mb-3 section-accent-line"></div>
+            <p class="text-muted" style="font-size: 1rem;">Temukan cabang PT. Satria Jayanti terdekat di kota Anda. Kunjungi kami atau hubungi admin secara langsung.</p>
         </div>
         
         <div class="row g-4 justify-content-center">
@@ -609,6 +577,7 @@
                 <div class="branch-modern-card d-flex flex-column h-100 shadow-sm position-relative">
                     
                     <div class="position-relative overflow-hidden">
+                        <!-- 🔥 DIR: storage/uploads ditambahkan -->
                         @if($b->foto)
                             <img src="{{ asset('storage/uploads/branches/'.$b->foto) }}" class="branch-frame-img" alt="{{ $b->nama_cabang }}">
                         @else
@@ -624,31 +593,31 @@
                         </div>
                     </div>
 
-                    <div class="p-4 flex-grow-1 d-flex flex-column">
+                    <div class="p-3 p-md-4 flex-grow-1 d-flex flex-column">
                         <p class="text-primary fw-bolder small mb-2 text-uppercase"><i class="bi bi-signpost-2-fill me-1"></i> {{ $b->lokasi }}</p>
                         <p class="text-muted small mb-4 flex-grow-1" style="line-height: 1.6;">{{ $b->detail ?? 'Cabang resmi pelatihan mengemudi PT. Satria Jayanti dengan fasilitas lengkap dan armada yang terawat.' }}</p>
                         
-                        <div class="d-flex gap-2 mt-auto pt-3 border-top border-light">
+                        <!-- 🔥 Flex-column flex-sm-row memastikan tombol sejajar di layar besar, tapi numpuk cantik di layar HP kecil -->
+                        <div class="d-flex flex-column flex-sm-row gap-2 mt-auto pt-3 border-top border-light">
                             @if($b->link_gmaps)
-                                <a href="{{ $b->link_gmaps }}" target="_blank" class="btn btn-maps-premium w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center" style="font-size: 0.85rem;">
+                                <a href="{{ $b->link_gmaps }}" target="_blank" class="btn btn-maps-premium w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
                                     <i class="bi bi-geo-alt-fill me-2"></i> Google Maps
                                 </a>
                             @else
-                                <button class="btn btn-light w-100 rounded-pill fw-bold py-2 text-muted border" disabled style="font-size: 0.85rem;">
+                                <button class="btn btn-light w-100 rounded-pill fw-bold py-2 text-muted border" disabled>
                                     <i class="bi bi-map me-1"></i> Maps Kosong
                                 </button>
                             @endif
 
                             @if($b->no_telp_admin)
                                 @php
-                                    // Mengubah angka 0 di depan menjadi 62 secara otomatis untuk link wa.me
                                     $waNumber = preg_replace('/^0/', '62', $b->no_telp_admin);
                                 @endphp
-                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="btn btn-wa-premium w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center" style="font-size: 0.85rem;">
+                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="btn btn-wa-premium w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
                                     <i class="bi bi-whatsapp me-2"></i> WhatsApp
                                 </a>
                             @else
-                                <button class="btn btn-light w-100 rounded-pill fw-bold py-2 text-muted border" disabled style="font-size: 0.85rem;">
+                                <button class="btn btn-light w-100 rounded-pill fw-bold py-2 text-muted border" disabled>
                                     <i class="bi bi-whatsapp me-1"></i> WA Kosong
                                 </button>
                             @endif
@@ -662,7 +631,7 @@
                     <i class="bi bi-buildings text-muted opacity-50" style="font-size: 3rem;"></i>
                 </div>
                 <h5 class="fw-bolder text-dark">Cabang Belum Tersedia</h5>
-                <p class="text-muted mx-auto" style="max-width: 400px;">Data lokasi cabang pelatihan sedang dalam proses pembaruan oleh sistem manajemen.</p>
+                <p class="text-muted mx-auto" style="max-width: 400px; font-size: 0.95rem;">Data lokasi cabang pelatihan sedang dalam proses pembaruan oleh sistem manajemen.</p>
             </div>
             @endforelse
         </div>
@@ -675,10 +644,11 @@
                 <h2 class="section-header-title">Galeri Satria Jayanti</h2>
                 <div class="section-accent-line mx-auto"></div>
             </div>
-            <div class="row g-3">
+            <div class="row g-2 g-md-3">
                 @forelse($galleries as $g)
                 <div class="col-6 col-md-3">
                     <div class="gallery-photo-item shadow-sm">
+                        <!-- 🔥 DIR: storage/uploads ditambahkan -->
                         @if($g->foto)
                             <img src="{{ asset('storage/uploads/gallery/'.$g->foto) }}" alt="Galeri" class="w-100 h-100 object-fit-cover">
                         @else
@@ -699,6 +669,7 @@
     <footer class="footer-modern-section">
         <div class="container text-center">
             <div class="d-flex align-items-center justify-content-center mb-4">
+                <!-- 🔥 DIR: storage/uploads ditambahkan -->
                 @if(isset($setting) && $setting->logo)
                     <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo Footer" height="45" class="me-3 rounded shadow-sm">
                 @endif
