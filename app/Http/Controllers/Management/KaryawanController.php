@@ -16,7 +16,7 @@ class KaryawanController extends Controller
             ->whereIn('role', ['admin', 'instruktur'])
             ->orderBy('role', 'asc')
             ->get();
-            
+
         $branches = Branch::all();
         return view('management.karyawan.index', compact('karyawans', 'branches'));
     }
@@ -53,16 +53,21 @@ class KaryawanController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
+            // 🔥 LOGIC BARU: Validasi unique tapi mengecualikan ID milik karyawan yang sedang diedit
+            'username' => 'required|string|unique:users,username,' . $id,
+            'email' => 'required|email|unique:users,email,' . $id,
             'role' => 'required|in:admin,instruktur',
             'branch_id' => 'required|exists:branches,id',
             'no_telp' => 'required',
+            'kategori_transmisi' => 'nullable|in:Manual,Matic,Manual & Matic'
         ]);
 
-        $data = $request->only(['nama_lengkap', 'role', 'branch_id', 'no_telp', 'kategori_transmisi']);
-        
+        // 🔥 LOGIC BARU: Tambahkan username & email ke dalam array data yang akan diupdate
+        $data = $request->only(['nama_lengkap', 'username', 'email', 'role', 'branch_id', 'no_telp', 'kategori_transmisi']);
+
         // Update password jika diisi
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);

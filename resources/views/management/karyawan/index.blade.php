@@ -24,7 +24,7 @@
             <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border-start border-primary border-5 mb-4">
                 <div>
                     <h4 class="fw-bold m-0 text-dark">Manajemen SDM</h4>
-                    <p class="text-muted small m-0">Tambah, mutasi, atau hapus akun Admin dan Instruktur cabang.</p>
+                    <p class="text-muted small m-0">Tambah, mutasi, edit data, atau hapus akun Admin dan Instruktur cabang.</p>
                 </div>
                 <button class="btn btn-primary rounded-pill fw-bold px-4" data-bs-toggle="modal" data-bs-target="#modalTambahKaryawan">
                     <i class="bi bi-person-plus-fill me-2"></i>Tambah Karyawan Baru
@@ -86,24 +86,49 @@
                             <div class="modal fade" id="modalEdit{{ $k->id }}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg rounded-4">
-                                        <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Edit / Mutasi Karyawan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                        <div class="modal-header border-0 pb-0">
+                                            <h5 class="fw-bold">Edit / Mutasi Karyawan</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
                                         <form action="{{ url('/management/karyawan/'.$k->id) }}" method="POST">
                                             @csrf @method('PUT')
                                             <div class="modal-body p-4">
-                                                <div class="mb-3"><label class="small fw-bold mb-1">Nama Lengkap</label><input type="text" name="nama_lengkap" class="form-control" value="{{ $k->nama_lengkap }}" required></div>
-                                                <div class="mb-3"><label class="small fw-bold mb-1">Ubah Cabang Penugasan (Mutasi)</label>
+                                                <div class="mb-3">
+                                                    <label class="small fw-bold mb-1">Nama Lengkap</label>
+                                                    <input type="text" name="nama_lengkap" class="form-control" value="{{ $k->nama_lengkap }}" required>
+                                                </div>
+                                                
+                                                <!-- 🔥 LOGIC BARU: Kolom Edit Username & Email dibikin sejajar -->
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="small fw-bold mb-1">Username</label>
+                                                        <input type="text" name="username" class="form-control" value="{{ $k->username }}" required>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="small fw-bold mb-1">Email Aktif</label>
+                                                        <input type="email" name="email" class="form-control" value="{{ $k->email }}" required>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="small fw-bold mb-1">Ubah Cabang Penugasan (Mutasi)</label>
                                                     <select name="branch_id" class="form-select" required>
-                                                        @foreach($branches as $b) <option value="{{ $b->id }}" {{ $k->branch_id == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option> @endforeach
+                                                        @foreach($branches as $b) 
+                                                            <option value="{{ $b->id }}" {{ $k->branch_id == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option> 
+                                                        @endforeach
                                                     </select>
                                                 </div>
-                                                <div class="mb-3"><label class="small fw-bold mb-1">Jabatan</label>
+                                                <div class="mb-3">
+                                                    <label class="small fw-bold mb-1">Jabatan</label>
                                                     <select name="role" class="form-select" required>
                                                         <option value="admin" {{ $k->role == 'admin' ? 'selected' : '' }}>Admin Cabang</option>
                                                         <option value="instruktur" {{ $k->role == 'instruktur' ? 'selected' : '' }}>Instruktur Lapangan</option>
                                                     </select>
                                                 </div>
+                                                
                                                 @if($k->role == 'instruktur')
-                                                <div class="mb-3"><label class="small fw-bold mb-1">Spesialisasi Transmisi</label>
+                                                <div class="mb-3">
+                                                    <label class="small fw-bold mb-1">Spesialisasi Transmisi</label>
                                                     <select name="kategori_transmisi" class="form-select">
                                                         <option value="Manual" {{ $k->kategori_transmisi == 'Manual' ? 'selected' : '' }}>Manual</option>
                                                         <option value="Matic" {{ $k->kategori_transmisi == 'Matic' ? 'selected' : '' }}>Matic</option>
@@ -111,10 +136,19 @@
                                                     </select>
                                                 </div>
                                                 @endif
-                                                <div class="mb-3"><label class="small fw-bold mb-1">No WhatsApp</label><input type="text" name="no_telp" class="form-control" value="{{ $k->no_telp }}" required></div>
-                                                <div class="mb-0"><label class="small fw-bold mb-1">Ganti Password (Kosongkan jika tidak diubah)</label><input type="password" name="password" class="form-control"></div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="small fw-bold mb-1">No WhatsApp</label>
+                                                    <input type="text" name="no_telp" class="form-control" value="{{ $k->no_telp }}" required>
+                                                </div>
+                                                <div class="mb-0">
+                                                    <label class="small fw-bold mb-1">Ganti Password (Kosongkan jika tidak diubah)</label>
+                                                    <input type="password" name="password" class="form-control" placeholder="Ketik password baru...">
+                                                </div>
                                             </div>
-                                            <div class="modal-footer border-0"><button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Simpan Perubahan</button></div>
+                                            <div class="modal-footer border-0">
+                                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Simpan Perubahan</button>
+                                            </div>
                                         </form>
                                     </div>
                                 </div>
