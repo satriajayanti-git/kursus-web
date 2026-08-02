@@ -195,7 +195,7 @@
                                 <tr>
                                     <td style="width: 80px;">
                                         <!-- 🔥 Path cabang sudah fix -->
-                                        <img src="{{ asset('storage/uploads/branches/'. ($b->foto_cabang ?? $b->foto)) }}" alt="Cabang">
+                                        <img src="{{ asset('storage/uploads/branches/'. ($b->foto ?? $b->foto_cabang)) }}" class="rounded-3 shadow-sm border" style="width: 70px; height: 50px; object-fit: cover;">
                                     </td>
                                     <td>
                                         <h6 class="fw-bold text-dark mb-1">{{ $b->nama_cabang }}</h6>
