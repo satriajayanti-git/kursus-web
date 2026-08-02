@@ -29,7 +29,7 @@
                     
                     <div class="mb-4">
                         @if($setting->logo)
-                            <img src="{{ asset('uploads/settings/'.$setting->logo) }}" alt="Logo" style="max-height: 60px;" class="mb-2">
+                            <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" style="max-height: 60px;" class="mb-2">
                         @else
                             <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;"><i class="bi bi-steering fs-2"></i></div>
                         @endif

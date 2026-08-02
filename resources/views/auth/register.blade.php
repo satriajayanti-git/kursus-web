@@ -137,7 +137,7 @@
             <div class="col-lg-5 d-none d-lg-flex desktop-cover">
                 <div class="d-flex align-items-center gap-3 mb-4">
                     @if(isset($setting) && $setting->logo)
-                        <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="55" class="bg-white p-2 rounded-3 shadow-sm" alt="Logo">
+                        <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="55" class="bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                     @else
                         <div class="bg-white text-primary rounded-3 d-inline-flex align-items-center justify-content-center p-2 shadow-sm" style="width: 55px; height: 55px;">
                             <i class="bi bi-steering fs-3"></i>
@@ -160,7 +160,7 @@
                 <div class="w-100" style="max-width: 540px;">
                     <div class="d-block d-lg-none mobile-header">
                         @if(isset($setting) && $setting->logo)
-                            <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="45" class="mb-2 bg-white p-2 rounded-3 shadow-sm" alt="Logo">
+                            <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="45" class="mb-2 bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                         @else
                             <i class="bi bi-steering fs-1 text-white mb-2 d-block"></i>
                         @endif
