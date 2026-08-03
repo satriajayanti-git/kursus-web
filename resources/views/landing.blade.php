@@ -286,7 +286,7 @@
                     <div class="card-vision-mission">
                         <div class="card-icon-header"><i class="bi bi-rocket-takeoff-fill"></i></div>
                         <h4 class="fw-bold text-dark mb-3">Visi Kami</h4>
-                        <p class="text-muted fst-italic">"Menjadi lembaga pendidikan dan pelatihan sekolah mengemudi yang unggul dan mampu bersaing di tingkat nasional."</p>
+                        <p class="text-muted fst-italic">Menjadi lembaga pendidikan dan pelatihan sekolah mengemudi yang unggul dan mampu bersaing di tingkat nasional.</p>
                     </div>
                 </div>
                 <div class="col-lg-7">

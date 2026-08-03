@@ -14,6 +14,9 @@
         }
         .auth-card { background: rgba(255, 255, 255, 0.95); border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .btn-back { position: absolute; top: 20px; left: 20px; z-index: 100; }
+        
+        /* Tambahan style untuk merapikan input password agar border menyatu dengan ikon */
+        .input-password-custom:focus { z-index: 0; box-shadow: none; border-color: #dee2e6; }
     </style>
 </head>
 <body>
@@ -46,10 +49,18 @@
                             <label class="form-label small fw-bold">Username</label>
                             <input type="text" name="username" class="form-control" required>
                         </div>
+                        
+                        <!-- 🔥 BAGIAN PASSWORD YANG SUDAH DITAMBAHKAN IKON MATA -->
                         <div class="mb-4">
                             <label class="form-label small fw-bold">Password</label>
-                            <input type="password" name="password" class="form-control" required>
+                            <div class="input-group">
+                                <input type="password" name="password" id="passwordField" class="form-control input-password-custom border-end-0" required>
+                                <button class="btn btn-white border border-start-0 text-muted" type="button" id="togglePassword" style="background-color: #fff;">
+                                    <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Masuk</button>
                     </form>
 
@@ -58,5 +69,24 @@
             </div>
         </div>
     </div>
+
+    <!-- 🔥 SCRIPT JAVASCRIPT UNTUK TOGGLE SHOW/HIDE PASSWORD -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordField = document.getElementById('passwordField');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            togglePassword.addEventListener('click', function () {
+                // Mengecek tipe input saat ini, lalu membaliknya
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                
+                // Mengubah icon dari mata dicoret (eye-slash) ke mata terbuka (eye)
+                toggleIcon.classList.toggle('bi-eye');
+                toggleIcon.classList.toggle('bi-eye-slash');
+            });
+        });
+    </script>
 </body>
 </html>
