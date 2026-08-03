@@ -172,7 +172,6 @@
                                 <div class="card card-custom p-4 bg-white shadow-sm border border-success-subtle h-100">
                                     <h5 class="fw-bold mb-3"><i class="bi bi-calendar-plus me-2 text-primary"></i>Ajukan Jadwal Baru</h5>
                                     
-                                    <!-- 🔥 FIX: ID form dan select dropdown diatur untuk ditangkap oleh JavaScript -->
                                     <form action="{{ url('/siswa/simpan-jadwal') }}" method="POST" id="formAjukanJadwal">
                                         @csrf
                                         <div class="row">
@@ -188,6 +187,8 @@
                                                     <option value="09:00">09:00 - 10:00 WIB</option>
                                                     <option value="10:00">10:00 - 11:00 WIB</option>
                                                     <option value="11:00">11:00 - 12:00 WIB</option>
+                                                    <!-- OPSI 12:00 - 13:00 DITAMBAHKAN DI SINI -->
+                                                    <option value="12:00">12:00 - 13:00 WIB</option>
                                                     <option value="13:00">13:00 - 14:00 WIB</option>
                                                     <option value="14:00">14:00 - 15:00 WIB</option>
                                                     <option value="15:00">15:00 - 16:00 WIB</option>
