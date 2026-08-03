@@ -244,22 +244,34 @@
                             Siswa yang didaftarkan melalui form ini akan otomatis mendapatkan <strong>Tagihan Baru</strong> di menu Keuangan. Status akun akan tetap <strong>Non-Aktif</strong> hingga Admin mengunggah bukti bayar dan melakukan konfirmasi Lunas.
                         </div>
 
+                        <!-- 🔥 GRID DISUSUN ULANG AGAR RAPI -->
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Nama Lengkap Siswa</label>
                                 <input type="text" name="nama_lengkap" class="form-control shadow-sm" required placeholder="Sesuai KTP">
                             </div>
+
+                            <!-- 🔥 TAMBAHAN FILTER KATEGORI -->
+                            <div class="col-md-6 mb-3">
+                                <label class="small fw-bold text-muted mb-1">Kategori Paket</label>
+                                <select id="addKategoriSelect" class="form-select shadow-sm border-success" required>
+                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="Reguler">Reguler</option>
+                                    <option value="Non-Reguler">Non-Reguler</option>
+                                </select>
+                            </div>
                             <div class="col-md-6 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Pilih Paket Kursus</label>
-                                <select name="id_package" class="form-select shadow-sm border-success" required>
+                                <select name="id_package" id="addPaketSelect" class="form-select shadow-sm border-success" required disabled>
                                     <option value="">-- Pilih Paket & Transmisi --</option>
                                     @foreach(\App\Models\Package::all() as $pkg)
-                                        <option value="{{ $pkg->id_package }}">
+                                        <option value="{{ $pkg->id_package }}" data-kategori="{{ $pkg->kategori ?? 'Reguler' }}">
                                             {{ $pkg->nama_package }} ({{ $pkg->transmisi }}) - Rp {{ number_format($pkg->harga, 0, ',', '.') }}
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
+
                             <div class="col-md-6 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Username (Untuk Login)</label>
                                 <input type="text" name="username" class="form-control shadow-sm" required placeholder="Tanpa spasi">
@@ -268,6 +280,7 @@
                                 <label class="small fw-bold text-muted mb-1">Password</label>
                                 <input type="password" name="password" class="form-control shadow-sm" required placeholder="Minimal 6 karakter">
                             </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Email Aktif</label>
                                 <input type="email" name="email" class="form-control shadow-sm" required placeholder="Contoh: siswa@gmail.com">
@@ -276,6 +289,7 @@
                                 <label class="small fw-bold text-muted mb-1">Nomor Telepon / WhatsApp</label>
                                 <input type="text" name="no_telp" class="form-control shadow-sm" required placeholder="08xxxxxx">
                             </div>
+                            
                             <div class="col-md-12 mb-2">
                                 <label class="small fw-bold text-muted mb-1">Alamat Domisili</label>
                                 <textarea name="alamat" class="form-control shadow-sm" rows="3" required placeholder="Alamat lengkap siswa"></textarea>
@@ -293,7 +307,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Script Logic SweetAlert2 -->
+    <!-- Script Logic SweetAlert2 & JS Tambahan -->
     <script>
         @if(session('success'))
             Swal.fire({
@@ -354,6 +368,37 @@
                 }
             });
         }
+
+        // 🔥 LOGIC JAVASCRIPT: FILTER PAKET DINAMIS BERDASARKAN KATEGORI
+        document.addEventListener('DOMContentLoaded', function () {
+            const kategoriSelect = document.getElementById('addKategoriSelect');
+            const paketSelect = document.getElementById('addPaketSelect');
+            
+            if (kategoriSelect && paketSelect) {
+                // Simpan semua opsi asli dari paketSelect ke dalam array
+                const paketOptions = Array.from(paketSelect.options).filter(opt => opt.value !== "");
+
+                kategoriSelect.addEventListener('change', function() {
+                    const selectedKategori = this.value;
+                    
+                    // Bersihkan isi dropdown paket setiap kali kategori berubah
+                    paketSelect.innerHTML = '<option value="">-- Pilih Paket & Transmisi --</option>';
+                    
+                    if (selectedKategori) {
+                        paketSelect.disabled = false; // Buka kunci dropdown
+                        
+                        // Loop array options, pasang kembali hanya yang cocok dengan kategori
+                        paketOptions.forEach(option => {
+                            if (option.getAttribute('data-kategori') === selectedKategori) {
+                                paketSelect.appendChild(option.cloneNode(true));
+                            }
+                        });
+                    } else {
+                        paketSelect.disabled = true; // Kunci kembali jika kosong
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
