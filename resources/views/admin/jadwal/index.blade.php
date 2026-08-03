@@ -193,6 +193,7 @@
                                     <option value="09:00">09:00 - 10:00 WIB</option>
                                     <option value="10:00">10:00 - 11:00 WIB</option>
                                     <option value="11:00">11:00 - 12:00 WIB</option>
+                                    <option value="12:00">12:00 - 13:00 WIB</option>
                                     <option value="13:00">13:00 - 14:00 WIB</option>
                                     <option value="14:00">14:00 - 15:00 WIB</option>
                                     <option value="15:00">15:00 - 16:00 WIB</option>
@@ -270,6 +271,7 @@
                                     <option value="09:00" {{ $j->jam_mulai == '09:00' ? 'selected' : '' }}>09:00 - 10:00 WIB</option>
                                     <option value="10:00" {{ $j->jam_mulai == '10:00' ? 'selected' : '' }}>10:00 - 11:00 WIB</option>
                                     <option value="11:00" {{ $j->jam_mulai == '11:00' ? 'selected' : '' }}>11:00 - 12:00 WIB</option>
+                                    <option value="12:00" {{ $j->jam_mulai == '12:00' ? 'selected' : '' }}>12:00 - 13:00 WIB</option>
                                     <option value="13:00" {{ $j->jam_mulai == '13:00' ? 'selected' : '' }}>13:00 - 14:00 WIB</option>
                                     <option value="14:00" {{ $j->jam_mulai == '14:00' ? 'selected' : '' }}>14:00 - 15:00 WIB</option>
                                     <option value="15:00" {{ $j->jam_mulai == '15:00' ? 'selected' : '' }}>15:00 - 16:00 WIB</option>

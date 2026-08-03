@@ -149,9 +149,8 @@ class JadwalController extends Controller
 
         // 8. Cek Extra Charge Lembut (Jam >= 16:00 Reguler)
         $jamMulaiInt = (int) substr($request->jam_mulai, 0, 2);
-        if ($jamMulaiInt == 12) {
-            return back()->with('error', 'SISTEM MENOLAK: Jam 12:00 - 13:00 adalah waktu istirahat instruktur.');
-        }
+        
+        // 🔥 LOGIC IZIN JAM 12:00 SUDAH DIBUKA (Pengecekan penolakan jam 12 telah dihapus)
 
         $is_extra = 0;
         $status_pembayaran_extra = 'Tidak Ada';

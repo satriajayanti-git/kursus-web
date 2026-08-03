@@ -12,7 +12,6 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // 🔥 FIX: Tarik relasi 'branch' agar kita bisa ambil nomor WhatsApp admin cabangnya
         $user = User::with(['package', 'branch'])->find(Auth::id());
         $setting = Setting::first();
         
@@ -35,7 +34,6 @@ class DashboardController extends Controller
 
     public function uploadBukti(Request $request, $id)
     {
-        // 🔥 FIX: Tambahkan validasi metode pembayaran
         $request->validate([
             'bukti_bayar' => 'required|image|max:2048',
             'metode_pembayaran' => 'required|string' 
@@ -45,7 +43,6 @@ class DashboardController extends Controller
         $tagihan = Pembayaran::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         
         if ($request->hasFile('bukti_bayar')) {
-            // 🔥 PERBAIKAN LOGIC HAPUS: Cek dan hapus file lama menggunakan Storage facade
             if ($tagihan->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $tagihan->bukti_bayar)) {
                 Storage::disk('public')->delete('uploads/bukti/' . $tagihan->bukti_bayar);
             }
@@ -53,10 +50,8 @@ class DashboardController extends Controller
             $file = $request->file('bukti_bayar');
             $namaFile = time() . '_bukti_' . $id . '_' . $user->id . '.' . $file->getClientOriginalExtension();
             
-            // 🔥 PERBAIKAN UPLOAD: Gunakan storeAs dengan disk 'public' agar masuk ke storage/app/public/uploads/bukti
             $file->storeAs('uploads/bukti', $namaFile, 'public');
             
-            // 🔥 TRIK PINTAR: Sisipkan info Bank ke dalam Keterangan agar Admin bisa langsung baca tanpa rombak Database
             $keteranganUpdate = $tagihan->keterangan;
             if (!str_contains($keteranganUpdate, 'Via Bank:')) {
                 $keteranganUpdate = $keteranganUpdate . ' (Via Bank: ' . $request->metode_pembayaran . ')';
@@ -96,9 +91,8 @@ class DashboardController extends Controller
         if($selfDouble) return back()->with('error', 'Anda sudah memiliki pengajuan jadwal di waktu yang sama.'); 
 
         $jamMulai = (int) substr($request->jam_mulai, 0, 2);
-        if ($jamMulai == 12) {
-            return back()->with('error', 'Jam 12:00 - 13:00 adalah waktu istirahat instruktur. Silakan pilih jam lain.');
-        }
+        
+        // 🔥 LOGIC IZIN JAM 12:00 SUDAH DIBUKA (Pengecekan penolakan jam 12 telah dihapus)
 
         $kategoriPaket = $user->package->kategori ?? 'Reguler';
         $is_extra = 0; 
