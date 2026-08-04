@@ -133,4 +133,8 @@ Route::middleware(['auth', CheckRole::class . ':management'])->prefix('managemen
     
     Route::get('/laporan', [ManagementReport::class, 'index'])->name('management.laporan.index');
     Route::post('/laporan/cetak', [ManagementReport::class, 'cetak'])->name('management.laporan.cetak');
+
+    // 🔥 ROUTE BARU: Ubah Password Management
+    Route::get('/ubah-password', [ManagementDashboard::class, 'showPasswordForm'])->name('management.password.form');
+    Route::put('/ubah-password', [ManagementDashboard::class, 'updatePassword'])->name('management.password.update');
 });

@@ -32,6 +32,12 @@
         <a href="{{ url('/management/laporan') }}" class="nav-link-custom {{ Request::is('management/laporan*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph-fill me-3"></i> Laporan Global
         </a>
+
+        <!-- 🔥 TAMBAHAN MENU UBAH PASSWORD -->
+        <div class="menu-label text-muted mb-2 mt-4" style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Akun & Keamanan</div>
+        <a href="{{ url('/management/ubah-password') }}" class="nav-link-custom {{ Request::is('management/ubah-password*') ? 'active' : '' }}">
+            <i class="bi bi-shield-lock-fill me-3"></i> Ubah Password
+        </a>
     </div>
 
     <div class="p-4 border-top">

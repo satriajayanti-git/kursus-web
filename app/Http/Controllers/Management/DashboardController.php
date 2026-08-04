@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Management;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request; // Tambah Request
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\{User, Branch, Pembayaran, Setting, Unit}; // Tambah Unit
-use Carbon\Carbon; // Tambah Carbon untuk hitung H-14
+use Illuminate\Support\Facades\Hash; // Tambah Hash untuk validasi password
+use App\Models\{User, Branch, Pembayaran, Setting, Unit}; 
+use Carbon\Carbon; 
 
 class DashboardController extends Controller
 {
@@ -39,7 +41,6 @@ class DashboardController extends Controller
         }
 
         // 🔥 LOGIC REMINDER PAJAK & KIR (H-14)
-        // Kita cuma tarik data yang jatuh temponya <= 14 hari lagi
         $warningDate = Carbon::now()->addDays(14);
         
         $pajakAlerts = Unit::whereNotNull('tgl_jatuh_tempo_pajak')
@@ -50,7 +51,6 @@ class DashboardController extends Controller
                          ->where('tgl_jatuh_tempo_kir', '<=', $warningDate)
                          ->get();
 
-        // Kita kirim data alert ke view dashboard
         $reminders = [
             'pajak' => $pajakAlerts,
             'kir' => $kirAlerts
@@ -60,5 +60,38 @@ class DashboardController extends Controller
             'user', 'setting', 'totalCabang', 'totalSiswa', 'totalInstruktur', 'totalPendapatan',
             'chartBulan', 'chartPendapatan', 'reminders'
         ));
+    }
+
+    // 🔥 LOGIC BARU: Tampilkan halaman Ubah Password
+    public function showPasswordForm()
+    {
+        $setting = Setting::first();
+        return view('management.password', compact('setting'));
+    }
+
+    // 🔥 LOGIC BARU: Proses Ubah Password
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password_lama' => 'required',
+            'password_baru' => 'required|min:6|confirmed', 
+        ], [
+            'password_baru.confirmed' => 'Konfirmasi password baru tidak cocok.',
+            'password_baru.min' => 'Password baru minimal 6 karakter.'
+        ]);
+
+        $user = User::find(Auth::id());
+
+        // Cek kecocokan password lama
+        if (!Hash::check($request->password_lama, $user->password)) {
+            return back()->with('error', 'Password lama tidak sesuai!');
+        }
+
+        // Update ke database
+        $user->update([
+            'password' => Hash::make($request->password_baru)
+        ]);
+
+        return back()->with('success', 'Kata sandi berhasil diperbarui! Silakan gunakan kata sandi baru untuk login selanjutnya.');
     }
 }
