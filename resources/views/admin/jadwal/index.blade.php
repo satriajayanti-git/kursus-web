@@ -199,6 +199,7 @@
                                     <option value="15:00">15:00 - 16:00 WIB</option>
                                     <option value="16:00">16:00 - 17:00 WIB</option>
                                     <option value="17:00">17:00 - 18:00 WIB</option>
+                                    <option value="18:00">18:00 - 19:00 WIB</option>
                                     <option value="19:00">19:00 - 20:00 WIB</option>
                                 </select>
                             </div>

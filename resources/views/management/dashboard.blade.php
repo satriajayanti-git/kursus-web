@@ -51,7 +51,7 @@
 <body>
     <div class="sidebar p-3">
         <div class="d-flex align-items-center px-3 mb-5 mt-2">
-            <img src="{{ asset('uploads/settings/'.$setting->logo) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
+            <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
         </div>
         
         <div class="mb-4">
