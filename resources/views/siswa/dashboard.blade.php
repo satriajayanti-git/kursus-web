@@ -155,8 +155,14 @@
                                     <span>Progres Latihan</span>
                                     @php 
                                         $max = $user->package->jumlah_pertemuan ?? 1;
+                                        
+                                        // LOGIC BARU: Cek promo Manual 15x
+                                        if (strtolower($user->package->transmisi ?? '') == 'manual' && $max == 15) {
+                                            $max += 1; // Menambah bonus 1 jam menjadi total 16
+                                        }
+
                                         $done = $mySchedules->where('status', 'Selesai')->count();
-                                        $percent = ($done / $max) * 100;
+                                        $percent = ($max > 0) ? ($done / $max) * 100 : 0;
                                     @endphp
                                     <span>{{ $done }}/{{ $max }} Sesi</span>
                                 </div>

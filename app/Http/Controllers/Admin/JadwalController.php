@@ -90,10 +90,17 @@ class JadwalController extends Controller
 
         // 1. Cek Kuota Sesi
         $maxSesi = $siswa->package->pertemuan ?? 0;
+
+        // 🔥 LOGIC BARU: Cek promo Free 1 Jam khusus Manual 15x
+        if (strtolower($siswa->package->transmisi ?? '') == 'manual' && $maxSesi == 15) {
+            $maxSesi += 1; // Sistem akan merubah batas maksimal menjadi 16 khusus untuk kondisi ini
+        }
+
         $sesiTerpakai = Jadwal::where('user_id', $siswa->id)->where('status', '!=', 'Batal')->count();
         if ($sesiTerpakai >= $maxSesi) {
-            return back()->with('error', 'SISTEM MENOLAK: Kuota pertemuan siswa ini sudah habis (' . $maxSesi . '/' . $maxSesi . ').');
+            return back()->with('error', 'SISTEM MENOLAK: Kuota pertemuan siswa ini sudah habis (' . $sesiTerpakai . '/' . $maxSesi . ').');
         }
+
 
         // 2. Cek Validasi Transmisi (MUTLAK: Instruktur vs Unit Mobil)
         $transmisiSiswa = $siswa->package->transmisi ?? 'Manual';

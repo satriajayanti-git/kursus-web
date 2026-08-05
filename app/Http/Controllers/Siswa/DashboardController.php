@@ -26,8 +26,15 @@ class DashboardController extends Controller
         $riwayatPembayaran = Pembayaran::where('user_id', $user->id)->orderBy('updated_at', 'desc')->get();
         
         $totalSesi = $user->package->pertemuan ?? 0;
+
+        // 🔥 LOGIC BARU: Promo Manual 15x dapat tambahan 1 sesi
+        if (strtolower($user->package->transmisi ?? '') == 'manual' && $totalSesi == 15) {
+            $totalSesi += 1;
+        }
+
         $sesiTerpakai = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         $sisaSesi = $totalSesi - $sesiTerpakai;
+
         
         return view('siswa.dashboard', compact('user', 'tagihanUtama', 'tagihanTambahan', 'setting', 'mySchedules', 'sisaSesi', 'riwayatPembayaran'));
     }
@@ -78,6 +85,12 @@ class DashboardController extends Controller
         }
         
         $max = $user->package->pertemuan ?? 0;
+
+        // 🔥 LOGIC BARU: Promo Manual 15x dapat tambahan 1 sesi
+        if (strtolower($user->package->transmisi ?? '') == 'manual' && $max == 15) {
+            $max += 1;
+        }
+
         $count = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         if ($count >= $max) {
             return back()->with('error', "Kuota pertemuan paket Anda sudah habis.");
