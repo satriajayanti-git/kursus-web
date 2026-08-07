@@ -154,7 +154,8 @@
                                 <div class="d-flex justify-content-between small fw-bold mb-1">
                                     <span>Progres Latihan</span>
                                     @php 
-                                        $max = $user->package->jumlah_pertemuan ?? 1;
+                                        // 🔥 FIX: Menyesuaikan pemanggilan kolom dengan tabel packages di database
+                                        $max = $user->package->pertemuan ?? $user->package->jumlah_pertemuan ?? 1;
                                         
                                         // LOGIC BARU: Cek promo Manual 15x
                                         if (strtolower($user->package->transmisi ?? '') == 'manual' && $max == 15) {
