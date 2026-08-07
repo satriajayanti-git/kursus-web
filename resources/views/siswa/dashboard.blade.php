@@ -46,7 +46,8 @@
         <div class="d-flex align-items-center w-100 justify-content-between">
             <div class="d-flex align-items-center">
                 @if($setting && $setting->logo)
-                    <img src="{{ asset('uploads/settings/'.$setting->logo) }}" height="30" class="me-2">
+                    <!-- 🔥 FIX: Menambahkan /storage/ pada path logo agar tampil di Mobile -->
+                    <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="30" class="me-2">
                 @else
                     <i class="bi bi-steering fs-4 text-primary me-2"></i>
                 @endif
@@ -138,11 +139,28 @@
                 <!-- PANE 1: DASHBOARD (PENJADWALAN) -->
                 <!-- ============================ -->
                 <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel">
+                    
                     <div class="card card-custom bg-primary text-white p-4 mb-4">
                         <h3 class="fw-bold mb-1">Halo, {{ explode(' ', $user->nama_lengkap)[0] }}!</h3>
                         <h6 class="fw-bold mb-2">ID Pendaftaran : {{ $user->id_siswa ?? '-' }}</h6>
                         <p class="mb-0 opacity-75 small">Kelola dan ajukan jadwal sesi latihan Anda di halaman ini.</p>
                     </div>
+
+                    <!-- 🔥 FIX: ALERT BONUS PROMO KHUSUS MANUAL 15X -->
+                    @php
+                        $baseMaxSesi = $user->package->pertemuan ?? $user->package->jumlah_pertemuan ?? 1;
+                        $isPromoManual15 = (strtolower($user->package->transmisi ?? '') == 'manual' && $baseMaxSesi == 15);
+                    @endphp
+
+                    @if($isPromoManual15)
+                        <div class="alert border-0 shadow-sm mb-4 rounded-4 d-flex align-items-center" style="background-color: #fff9e6; border-left: 5px solid #ffc107 !important;">
+                            <i class="bi bi-gift-fill fs-1 text-warning me-3"></i>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Selamat! Anda Mendapatkan Promo Spesial! 🎉</h6>
+                                <p class="small text-muted mb-0">Karena Anda mendaftar <strong>Paket Manual 15x Pertemuan</strong>, Anda berhak mendapatkan ekstra <strong>1x Pertemuan GRATIS</strong>. Total progres sesi latihan Anda telah disesuaikan menjadi 16 Sesi.</p>
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="row g-4">
                         <div class="col-lg-5">
@@ -154,7 +172,6 @@
                                 <div class="d-flex justify-content-between small fw-bold mb-1">
                                     <span>Progres Latihan</span>
                                     @php 
-                                        // 🔥 FIX: Menyesuaikan pemanggilan kolom dengan tabel packages di database
                                         $max = $user->package->pertemuan ?? $user->package->jumlah_pertemuan ?? 1;
                                         
                                         // LOGIC BARU: Cek promo Manual 15x
@@ -194,7 +211,6 @@
                                                     <option value="09:00">09:00 - 10:00 WIB</option>
                                                     <option value="10:00">10:00 - 11:00 WIB</option>
                                                     <option value="11:00">11:00 - 12:00 WIB</option>
-                                                    <!-- OPSI 12:00 - 13:00 DITAMBAHKAN DI SINI -->
                                                     <option value="12:00">12:00 - 13:00 WIB</option>
                                                     <option value="13:00">13:00 - 14:00 WIB</option>
                                                     <option value="14:00">14:00 - 15:00 WIB</option>
