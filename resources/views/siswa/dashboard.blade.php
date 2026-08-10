@@ -46,7 +46,6 @@
         <div class="d-flex align-items-center w-100 justify-content-between">
             <div class="d-flex align-items-center">
                 @if($setting && $setting->logo)
-                    <!-- 🔥 FIX: Menambahkan /storage/ pada path logo agar tampil di Mobile -->
                     <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="30" class="me-2">
                 @else
                     <i class="bi bi-steering fs-4 text-primary me-2"></i>
@@ -146,7 +145,6 @@
                         <p class="mb-0 opacity-75 small">Kelola dan ajukan jadwal sesi latihan Anda di halaman ini.</p>
                     </div>
 
-                    <!-- 🔥 FIX: ALERT BONUS PROMO KHUSUS MANUAL 15X -->
                     @php
                         $baseMaxSesi = $user->package->pertemuan ?? $user->package->jumlah_pertemuan ?? 1;
                         $isPromoManual15 = (strtolower($user->package->transmisi ?? '') == 'manual' && $baseMaxSesi == 15);
@@ -173,12 +171,9 @@
                                     <span>Progres Latihan</span>
                                     @php 
                                         $max = $user->package->pertemuan ?? $user->package->jumlah_pertemuan ?? 1;
-                                        
-                                        // LOGIC BARU: Cek promo Manual 15x
                                         if (strtolower($user->package->transmisi ?? '') == 'manual' && $max == 15) {
-                                            $max += 1; // Menambah bonus 1 jam menjadi total 16
+                                            $max += 1; 
                                         }
-
                                         $done = $mySchedules->where('status', 'Selesai')->count();
                                         $percent = ($max > 0) ? ($done / $max) * 100 : 0;
                                     @endphp
@@ -361,17 +356,32 @@
                                             </ul>
                                         </div>
                                         
-                                        <!-- 🔥 FIX: Form Upload + Metode Pembayaran Dropdown -->
+                                        <!-- 🔥 FORM UPLOAD (QRIS DINAMIS) -->
                                         <form action="{{ url('/siswa/bayar/' . $tagihanUtama->id) }}" method="POST" enctype="multipart/form-data">
                                             @csrf
                                             <div class="mb-3">
                                                 <label class="small text-muted fw-bold mb-1">Pilih Bank Tujuan Transfer:</label>
-                                                <select name="metode_pembayaran" class="form-select form-select-sm shadow-sm" required>
+                                                <select name="metode_pembayaran" class="form-select form-select-sm shadow-sm" onchange="toggleQris(this, 'qrisUtama')" required>
                                                     <option value="">-- Pilih Bank --</option>
                                                     <option value="BCA">Transfer ke BCA (7410689523)</option>
                                                     <option value="BRI">Transfer ke BRI (211401000434303)</option>
+                                                    <!-- Tampilkan opsi QRIS HANYA jika cabang ini punya foto QRIS -->
+                                                    @if($user->branch && $user->branch->qris_image)
+                                                        <option value="QRIS">Scan QRIS (Otomatis & Mudah)</option>
+                                                    @endif
                                                 </select>
                                             </div>
+                                            
+                                            <!-- 🔥 DIV UNTUK MUNCULKAN QR CODE TAGIHAN UTAMA -->
+                                            <div id="qrisUtama" class="text-center mt-3 mb-3 p-3 bg-white rounded-4 border shadow-sm" style="display: none;">
+                                                <p class="small fw-bold text-dark mb-2">Scan QR Code Berikut:</p>
+                                                @if($user->branch && $user->branch->qris_image)
+                                                    <img src="{{ asset('storage/uploads/qris/' . $user->branch->qris_image) }}" alt="QRIS {{ $user->branch->nama_cabang }}" class="img-fluid rounded border shadow-sm" style="max-height: 250px;">
+                                                @else
+                                                    <span class="text-danger small fw-bold">QRIS belum disetting oleh Admin.</span>
+                                                @endif
+                                            </div>
+
                                             <div class="mb-3">
                                                 <label class="small text-muted fw-bold mb-1">Upload Bukti Transfer (Resi):</label>
                                                 <input type="file" name="bukti_bayar" class="form-control form-control-sm shadow-sm" required>
@@ -380,7 +390,6 @@
                                         </form>
 
                                     @elseif($tagihanUtama->status == 'Pending')
-                                        <!-- 🔥 FIX: Tampilan Menunggu + Tombol WA -->
                                         <div class="text-center p-4 bg-warning bg-opacity-10 rounded-4 border border-warning-subtle mt-3">
                                             <i class="bi bi-hourglass-split text-warning display-4 mb-2 d-block"></i>
                                             <h6 class="fw-bold text-dark mb-2">Bukti Sedang Dicek</h6>
@@ -438,19 +447,32 @@
                                                         @if(!$tb->bukti_bayar || $tb->status == 'Ditolak')
                                                             <form action="{{ url('/siswa/bayar/' . $tb->id) }}" method="POST" enctype="multipart/form-data" class="mt-2 border-top pt-2">
                                                                 @csrf
-                                                                <!-- Tambahan Dropdown Bank -->
-                                                                <select name="metode_pembayaran" class="form-select form-select-sm mb-2 shadow-sm" required>
+                                                                <!-- Tambahan Dropdown Bank + Fungsi QRIS Dinamis -->
+                                                                <select name="metode_pembayaran" class="form-select form-select-sm mb-2 shadow-sm" onchange="toggleQris(this, 'qrisTambahan{{ $tb->id }}')" required>
                                                                     <option value="">- Pilih Bank -</option>
                                                                     <option value="BCA">BCA (7410689523)</option>
                                                                     <option value="BRI">BRI (211401000434303)</option>
+                                                                    @if($user->branch && $user->branch->qris_image)
+                                                                        <option value="QRIS">Scan QRIS (Otomatis & Mudah)</option>
+                                                                    @endif
                                                                 </select>
+
+                                                                <!-- 🔥 DIV UNTUK MUNCULKAN QR CODE TAGIHAN TAMBAHAN -->
+                                                                <div id="qrisTambahan{{ $tb->id }}" class="text-center mb-3 p-2 bg-white rounded-3 border shadow-sm" style="display: none;">
+                                                                    <p class="small fw-bold text-dark mb-2">Scan QR Code Berikut:</p>
+                                                                    @if($user->branch && $user->branch->qris_image)
+                                                                        <img src="{{ asset('storage/uploads/qris/' . $user->branch->qris_image) }}" alt="QRIS {{ $user->branch->nama_cabang }}" class="img-fluid rounded border shadow-sm" style="max-height: 200px;">
+                                                                    @else
+                                                                        <span class="text-danger small fw-bold">QRIS belum disetting oleh Admin.</span>
+                                                                    @endif
+                                                                </div>
+
                                                                 <div class="input-group input-group-sm">
                                                                     <input type="file" name="bukti_bayar" class="form-control" required>
                                                                     <button class="btn btn-dark fw-bold px-3">Kirim</button>
                                                                 </div>
                                                             </form>
                                                         @elseif($tb->status == 'Pending')
-                                                            <!-- Tombol WA buat tagihan tambahan -->
                                                             <a href="{{ $waUrl }}" target="_blank" class="btn btn-success btn-sm fw-bold rounded-pill px-3 mt-2 shadow-sm d-inline-block">
                                                                 <i class="bi bi-whatsapp me-1"></i>Konfirmasi Admin
                                                             </a>
@@ -613,13 +635,9 @@
                 if(jamMulaiVal) {
                     const jamInt = parseInt(jamMulaiVal.substring(0, 2));
 
-                    // Jika Paket Reguler dan milih jam 16:00 ke atas
                     if (isReguler && jamInt >= 16) {
-                        // Cek apakah user sudah mengklik 'Ya' (hidden input sudah ditambahkan)
                         if (!document.getElementById('acc_extra_charge_input')) {
-                            e.preventDefault(); // Hentikan form agar tidak submit otomatis
-                            
-                            // Tampilkan Modal Peringatan Bootstrap
+                            e.preventDefault(); 
                             var myModal = new bootstrap.Modal(document.getElementById('modalConfirmExtraCharge'));
                             myModal.show();
                         }
@@ -628,21 +646,27 @@
             });
         }
 
-        // Logic saat tombol 'Ya, Lanjutkan' ditekan
         const btnConfirm = document.getElementById('btnConfirmExtra');
         if (btnConfirm) {
             btnConfirm.addEventListener('click', function() {
-                // Tambahkan persetujuan biaya tambahan berupa hidden input ke dalam form
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.id = 'acc_extra_charge_input';
                 input.name = 'acc_extra_charge';
                 input.value = '1';
                 formAjukan.appendChild(input);
-                
-                // Submit form secara paksa
                 formAjukan.submit();
             });
+        }
+
+        // 🔥 FUNGSI JAVASCRIPT UNTUK MENAMPILKAN / MENYEMBUNYIKAN GAMBAR QRIS
+        function toggleQris(selectElement, targetDivId) {
+            const qrisDiv = document.getElementById(targetDivId);
+            if (selectElement.value === 'QRIS') {
+                qrisDiv.style.display = 'block'; 
+            } else {
+                qrisDiv.style.display = 'none'; 
+            }
         }
     </script>
 </body>
