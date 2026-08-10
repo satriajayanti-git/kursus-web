@@ -20,7 +20,6 @@
 <body>
     <div class="sidebar p-3 shadow-sm">
         <div class="text-center py-4 mb-4">
-            <!-- 🔥 Logo Path sudah menggunakan storage -->
             <img src="{{ asset('storage/uploads/settings/'.($setting->logo ?? 'default.png')) }}" alt="Logo" class="img-fluid" style="max-height: 45px;">
         </div>
         <nav>
@@ -45,7 +44,6 @@
             <p class="text-muted m-0">Kelola paket kursus, cabang, galeri, dan identitas Satria Jayanti.</p>
         </header>
 
-        <!-- 🔥 INI PENANGKAP ERROR: Biar tau kalau gambar kebesaran atau form salah -->
         @if($errors->any())
             <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4">
                 <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Terjadi Kesalahan:</div>
@@ -194,16 +192,17 @@
                                 @forelse($branches as $b)
                                 <tr>
                                     <td style="width: 80px;">
-                                        <!-- 🔥 Path cabang sudah fix -->
                                         <img src="{{ asset('storage/uploads/branches/'. ($b->foto ?? $b->foto_cabang)) }}" class="rounded-3 shadow-sm border" style="width: 70px; height: 50px; object-fit: cover;">
                                     </td>
                                     <td>
                                         <h6 class="fw-bold text-dark mb-1">{{ $b->nama_cabang }}</h6>
                                         <p class="small text-muted mb-1"><i class="bi bi-pin-map text-danger me-1"></i>{{ $b->lokasi }}</p>
                                         
-                                        <div class="d-flex gap-2 mt-1">
+                                        <div class="d-flex flex-wrap gap-2 mt-1">
                                             @if($b->link_gmaps) <span class="badge bg-danger-subtle text-danger" style="font-size: 0.65rem;"><i class="bi bi-map-fill me-1"></i>Maps OK</span> @endif
                                             @if($b->no_telp_admin) <span class="badge bg-success-subtle text-success" style="font-size: 0.65rem;"><i class="bi bi-whatsapp me-1"></i>WA OK</span> @endif
+                                            <!-- 🔥 BADGE INDIKATOR QRIS -->
+                                            @if($b->qris_image) <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size: 0.65rem;"><i class="bi bi-qr-code-scan me-1"></i>QRIS Aktif</span> @endif
                                         </div>
                                     </td>
                                     <td class="text-end">
@@ -248,9 +247,20 @@
                                                             <input type="text" name="no_telp_admin" class="form-control border-start-0" value="{{ $b->no_telp_admin }}" placeholder="Contoh: 081234567890">
                                                         </div>
                                                     </div>
-                                                    <div class="mb-0">
+                                                    <div class="mb-3">
                                                         <label class="small fw-bold text-muted mb-1">Ganti Foto Cabang (Opsional)</label>
                                                         <input type="file" name="foto" class="form-control" accept="image/*">
+                                                    </div>
+                                                    <!-- 🔥 FORM EDIT GAMBAR QRIS -->
+                                                    <div class="mb-0">
+                                                        <label class="small fw-bold text-muted mb-1">Upload / Ganti Gambar QRIS Cabang (Opsional)</label>
+                                                        @if($b->qris_image)
+                                                            <div class="mb-2">
+                                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle"><i class="bi bi-check-circle-fill me-1"></i>QRIS Cabang Saat Ini Tersedia</span>
+                                                            </div>
+                                                        @endif
+                                                        <input type="file" name="qris_image" class="form-control" accept="image/*">
+                                                        <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">Maksimal 2MB. Kosongkan jika tidak ingin merubah QRIS.</small>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer border-0 pt-0 pb-4 px-4">
@@ -304,7 +314,6 @@
                     <div class="row g-2 px-4 pb-4">
                         @foreach($galleries as $g)
                         <div class="col-4 position-relative group">
-                            <!-- 🔥 Path Galeri Fix -->
                             <img src="{{ asset('storage/uploads/gallery/'.$g->foto) }}" class="rounded-3 shadow-sm w-100 object-fit-cover" style="height: 80px;">
                             <div class="position-absolute top-0 end-0 p-1">
                                 <form action="{{ url('/admin/settings/delete/gallery/'.$g->id) }}" method="POST">@csrf @method('DELETE')
@@ -322,12 +331,10 @@
                         @csrf
                         <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Nama Aplikasi/PT</label>
-                            <!-- 🔥 BUG FIXED: Sebelumnya name="nama_app", sekarang name="nama_website" sesuai controller -->
                             <input type="text" name="nama_website" class="form-control" value="{{ $setting->nama_website ?? 'Satria Jayanti' }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Ganti Logo Perusahaan</label>
-                            <!-- Pastikan gambar gak lebih dari 2MB biar gak kena validasi max:2048 di controller -->
                             <input type="file" name="logo" class="form-control" accept="image/*">
                         </div>
                         <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold py-2 mt-2 shadow-sm">Simpan Identitas</button>
@@ -415,7 +422,6 @@
                             <label class="small fw-bold text-muted mb-1">Detail Kontak Tambahan</label>
                             <input type="text" name="detail" class="form-control rounded-3">
                         </div>
-                        <!-- 🔥 BUG FIXED: Gmaps & WA disisipkan agar data tersimpan rapih ke Landing Page -->
                         <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Link Google Maps (Opsional)</label>
                             <div class="input-group shadow-sm">
@@ -430,9 +436,15 @@
                                 <input type="text" name="no_telp_admin" class="form-control border-start-0" placeholder="Contoh: 081234567890">
                             </div>
                         </div>
-                        <div class="mb-0">
+                        <div class="mb-3">
                             <label class="small fw-bold text-muted mb-1">Foto Cabang</label>
                             <input type="file" name="foto" class="form-control rounded-3" accept="image/*" required>
+                        </div>
+                        <!-- 🔥 FORM UPLOAD GAMBAR QRIS -->
+                        <div class="mb-0">
+                            <label class="small fw-bold text-muted mb-1">Foto QRIS Pembayaran (Opsional)</label>
+                            <input type="file" name="qris_image" class="form-control rounded-3" accept="image/*">
+                            <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">Upload gambar QRIS khusus untuk cabang ini.</small>
                         </div>
                     </div>
                     <div class="modal-footer border-0">

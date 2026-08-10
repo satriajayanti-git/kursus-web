@@ -79,7 +79,8 @@ class SettingController extends Controller
         $request->validate([
             'nama_cabang' => 'required', 
             'lokasi' => 'required', 
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'qris_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048' // 🔥 VALIDASI QRIS BARU
         ]);
 
         $branch = new Branch();
@@ -92,12 +93,17 @@ class SettingController extends Controller
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
-
             $file->storeAs('uploads/branches', $filename, 'public');
-
-            // 🔥 MENGISI KEDUANYA SEKALIGUS (Menghindari error kolom foto_cabang yang wajib diisi)
             $branch->foto = $filename;
             $branch->foto_cabang = $filename;
+        }
+
+        // 🔥 LOGIC UPLOAD GAMBAR QRIS CABANG BARU
+        if ($request->hasFile('qris_image')) {
+            $fileQris = $request->file('qris_image');
+            $qrisFilename = time() . '_qris.' . $fileQris->getClientOriginalExtension();
+            $fileQris->storeAs('uploads/qris', $qrisFilename, 'public');
+            $branch->qris_image = $qrisFilename;
         }
 
         $branch->save();
@@ -117,10 +123,7 @@ class SettingController extends Controller
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '_galeri.' . $file->getClientOriginalExtension();
-
-            // Simpan ke storage/app/public/uploads/gallery
             $file->storeAs('uploads/gallery', $filename, 'public');
-
             $gallery->foto = $filename;
         }
 
@@ -162,6 +165,7 @@ class SettingController extends Controller
             'nama_cabang' => 'required',
             'lokasi' => 'required',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'qris_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 🔥 VALIDASI QRIS BARU
             'link_gmaps' => 'nullable|url',
             'no_telp_admin' => 'nullable|string|max:20'
         ]);
@@ -174,7 +178,6 @@ class SettingController extends Controller
         $branch->no_telp_admin = $request->no_telp_admin;
 
         if ($request->hasFile('foto')) {
-            // Hapus foto lama dari storage jika ada
             $oldFoto = $branch->foto ?? $branch->foto_cabang;
             if ($oldFoto && Storage::disk('public')->exists('uploads/branches/' . $oldFoto)) {
                 Storage::disk('public')->delete('uploads/branches/' . $oldFoto);
@@ -182,12 +185,22 @@ class SettingController extends Controller
 
             $file = $request->file('foto');
             $filename = time() . '_cabang.' . $file->getClientOriginalExtension();
-
             $file->storeAs('uploads/branches', $filename, 'public');
-
-            // 🔥 UPDATE KEDUA FIELD SEKALIGUS
+            
             $branch->foto = $filename;
             $branch->foto_cabang = $filename;
+        }
+
+        // 🔥 LOGIC UPDATE GAMBAR QRIS CABANG
+        if ($request->hasFile('qris_image')) {
+            if ($branch->qris_image && Storage::disk('public')->exists('uploads/qris/' . $branch->qris_image)) {
+                Storage::disk('public')->delete('uploads/qris/' . $branch->qris_image);
+            }
+
+            $fileQris = $request->file('qris_image');
+            $qrisFilename = time() . '_qris.' . $fileQris->getClientOriginalExtension();
+            $fileQris->storeAs('uploads/qris', $qrisFilename, 'public');
+            $branch->qris_image = $qrisFilename;
         }
 
         $branch->save();
@@ -211,9 +224,7 @@ class SettingController extends Controller
 
             $file = $request->file('image');
             $filename = time() . '_galeri.' . $file->getClientOriginalExtension();
-
             $file->storeAs('uploads/gallery', $filename, 'public');
-
             $gallery->foto = $filename;
         }
 
@@ -233,6 +244,12 @@ class SettingController extends Controller
             if ($oldFoto && Storage::disk('public')->exists('uploads/branches/' . $oldFoto)) {
                 Storage::disk('public')->delete('uploads/branches/' . $oldFoto);
             }
+            
+            // 🔥 HAPUS QRIS JUGA JIKA CABANG DIHAPUS
+            if ($branch->qris_image && Storage::disk('public')->exists('uploads/qris/' . $branch->qris_image)) {
+                Storage::disk('public')->delete('uploads/qris/' . $branch->qris_image);
+            }
+
             $branch->delete();
         }
 
