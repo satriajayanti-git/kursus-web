@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage; // 🔥 Mengubah dari File menjadi Storage
+use Illuminate\Support\Facades\Storage;
 use App\Models\{Pembayaran, User, Jadwal};
 
 class KeuanganController extends Controller
@@ -56,7 +56,6 @@ class KeuanganController extends Controller
         return view('admin.keuangan.index', compact('pembayarans', 'siswas', 'total_omset', 'search', 'bulan', 'status_bayar'));
     }
 
-    // 🔥 LOGIC DIPERBARUI: Menggabungkan Update Status, Upload Bukti, & Metode Bayar
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -72,16 +71,13 @@ class KeuanganController extends Controller
             'status' => $request->status,
         ];
 
-        // 1. Eksekusi Penolakan
         if ($request->status == 'Ditolak') {
             $data['penolakan'] = $request->penolakan;
         } else {
             $data['penolakan'] = null;
         }
 
-        // 2. Eksekusi Upload Bukti (Jika Admin melampirkan file)
         if ($request->hasFile('bukti_bayar')) {
-            // 🔥 PERBAIKAN: Gunakan Storage facade untuk mengecek dan menghapus bukti lama
             if ($pembayaran->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $pembayaran->bukti_bayar)) {
                 Storage::disk('public')->delete('uploads/bukti/' . $pembayaran->bukti_bayar);
             }
@@ -89,26 +85,20 @@ class KeuanganController extends Controller
             $file = $request->file('bukti_bayar');
             $namaFile = time() . '_admin_upload_' . str_replace(' ', '_', $file->getClientOriginalName());
 
-            // 🔥 PERBAIKAN: Gunakan storeAs dengan parameter 'public' agar masuk ke storage/app/public/uploads/bukti
             $file->storeAs('uploads/bukti', $namaFile, 'public');
 
             $data['bukti_bayar'] = $namaFile;
         }
 
-        // 3. Eksekusi Injeksi Keterangan Metode Pembayaran (Trik Tanpa Rombak DB)
         if ($request->filled('metode_pembayaran')) {
             $keteranganUpdate = $pembayaran->keterangan;
-            // Bersihkan format (Via ...) yang lama agar tidak ada teks duplikat di database
             $keteranganUpdate = preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $keteranganUpdate);
 
-            // Masukkan format metode baru
             $data['keterangan'] = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
         }
 
-        // 4. Simpan Perubahan ke Database
         $pembayaran->update($data);
 
-        // 5. OTOMATISASI SINKRONISASI: Akun siswa otomatis 'Aktif' jika Paket Utama disetujui Lunas
         if ($pembayaran->jenis_tagihan === 'Paket Utama') {
             $siswa = User::find($pembayaran->user_id);
 

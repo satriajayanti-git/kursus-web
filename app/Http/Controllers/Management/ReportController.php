@@ -11,7 +11,7 @@ class ReportController extends Controller
     public function index()
     {
         $branches = Branch::all(); 
-        $admins = User::where('role', 'admin')->get(); // Tarik semua admin buat filter
+        $admins = User::where('role', 'admin')->get();
         
         return view('management.laporan.index', compact('branches', 'admins'));
     }
@@ -39,11 +39,9 @@ class ReportController extends Controller
         if ($branch_id) $nama_cabang = Branch::find($branch_id)->nama_cabang ?? 'Semua Cabang';
         if ($admin_id) {
             $adminObj = User::find($admin_id);
-            // Tarik nama dari field nama_admin atau fallback ke nama_lengkap
             $nama_admin = $adminObj->nama_admin ?? $adminObj->nama_lengkap ?? 'Semua Admin';
         }
 
-        // Tarik semua data Admin Cabang untuk mapping otomatis PIC yang kosong
         $branchAdmins = User::where('role', 'admin')->get()->groupBy('branch_id');
 
         if ($jenis == 'keuangan') {
@@ -55,15 +53,12 @@ class ReportController extends Controller
                 $query->where('branch_id', $branch_id);
             }
             
-            // 🔥 LOGIC BARU: Filter Akurat Admin Manual & Otomatis
             if ($admin_id) {
                 $adminFilter = User::find($admin_id);
                 
                 $query->where(function($q) use ($admin_id, $adminFilter) {
-                    // 1. Transaksi yang memang di-approve manual oleh admin ini
                     $q->where('approved_by', $admin_id);
                     
-                    // 2. Transaksi otomatis (approved_by null) yang masuk ke cabang tempat admin ini bertugas
                     if ($adminFilter && $adminFilter->branch_id) {
                         $q->orWhere(function($subQ) use ($adminFilter) {
                             $subQ->whereNull('approved_by')
@@ -76,7 +71,6 @@ class ReportController extends Controller
             $data = $query->orderBy('updated_at', 'desc')->get();
             $total = $data->sum('total_tagihan');
 
-            // Logic Mapping Nama PIC Admin secara akurat
             foreach ($data as $item) {
                 if ($item->approver) {
                     $item->pic_name = $item->approver->nama_admin ?? $item->approver->nama_lengkap ?? 'Admin Cabang';

@@ -189,6 +189,8 @@
                                                         <option value="Tunai / Cash">Tunai / Cash (Bayar di Cabang)</option>
                                                         <option value="BCA">Transfer BCA</option>
                                                         <option value="BRI">Transfer BRI</option>
+                                                        <!-- 🔥 PENAMBAHAN OPSI QRIS -->
+                                                        <option value="QRIS">Scan QRIS</option>
                                                     </select>
                                                     <small class="text-muted lh-1 mt-1 d-block" style="font-size: 0.7rem;">Gunakan opsi ini jika menerima uang pendaftaran siswa secara Offline.</small>
                                                 </div>
