@@ -27,7 +27,6 @@ class DashboardController extends Controller
         
         $totalSesi = $user->package->pertemuan ?? 0;
 
-        // 🔥 LOGIC BARU: Promo Manual 15x dapat tambahan 1 sesi
         if (strtolower($user->package->transmisi ?? '') == 'manual' && $totalSesi == 15) {
             $totalSesi += 1;
         }
@@ -35,15 +34,16 @@ class DashboardController extends Controller
         $sesiTerpakai = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         $sisaSesi = $totalSesi - $sesiTerpakai;
 
-        
         return view('siswa.dashboard', compact('user', 'tagihanUtama', 'tagihanTambahan', 'setting', 'mySchedules', 'sisaSesi', 'riwayatPembayaran'));
     }
 
     public function uploadBukti(Request $request, $id)
     {
         $request->validate([
-            'bukti_bayar' => 'required|image|max:2048',
-            'metode_pembayaran' => 'required|string' 
+            'bukti_bayar'       => 'required|image|max:2048',
+            'metode_pembayaran' => 'required|string',
+            'jenis_bayar'       => 'nullable|in:full,dp',
+            'nominal_dp'        => 'nullable|numeric|min:50000'
         ]);
         
         $user = Auth::user();
@@ -64,11 +64,36 @@ class DashboardController extends Controller
                 $keteranganUpdate = $keteranganUpdate . ' (Via Bank: ' . $request->metode_pembayaran . ')';
             }
 
+            if ($request->jenis_bayar === 'dp' && $tagihan->jenis_tagihan === 'Paket Utama' && $request->nominal_dp) {
+                
+                $sudahAdaPelunasan = Pembayaran::where('user_id', $user->id)
+                    ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
+                    ->exists();
+
+                if (!$sudahAdaPelunasan) {
+                    $nominalDp = $request->nominal_dp;
+                    $sisaTagihan = $tagihan->total_tagihan - $nominalDp;
+                    
+                    if ($sisaTagihan > 0) {
+                        $tagihan->total_tagihan = $nominalDp;
+                        
+                        Pembayaran::create([
+                            'user_id'       => $user->id,
+                            'branch_id'     => $tagihan->branch_id,
+                            'total_tagihan' => $sisaTagihan,
+                            'jenis_tagihan' => 'Tambahan',
+                            'keterangan'    => 'Pelunasan Sisa Pembayaran Paket Utama',
+                            'status'        => 'Pending'
+                        ]);
+                    }
+                }
+            }
+
             $tagihan->update([
                 'bukti_bayar' => $namaFile, 
-                'status' => 'Pending',
-                'penolakan' => null,
-                'keterangan' => $keteranganUpdate 
+                'status'      => 'Pending',
+                'penolakan'   => null,
+                'keterangan'  => $keteranganUpdate 
             ]);
         }
         
@@ -83,15 +108,26 @@ class DashboardController extends Controller
         if ($user->status !== 'Aktif' || !$tagihanUtama || $tagihanUtama->status !== 'Lunas') {
             return back()->with('error', 'Selesaikan pembayaran paket utama terlebih dahulu untuk mengaktifkan fitur jadwal.');
         }
+
+        // 🔥 LOGIC BARU: PEMBATASAN JADWAL UNTUK SISWA DP (MAKS 3 SESI)
+        $tagihanPelunasan = Pembayaran::where('user_id', $user->id)
+            ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
+            ->where('status', '!=', 'Lunas')
+            ->first();
+
+        $count = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
+        
+        // Peringatan Blockir Jadwal jika sudah 3x latihan tapi belum lunas
+        if ($tagihanPelunasan && $count >= 3) {
+            return back()->with('error', 'AKSES DIBATASI: Anda masih memiliki Tagihan Pelunasan (Berstatus DP). Anda hanya bisa mengikuti maksimal 3 sesi latihan. Silakan lunasi kekurangan pada Tab Keuangan untuk membuka jadwal selanjutnya.');
+        }
         
         $max = $user->package->pertemuan ?? 0;
 
-        // 🔥 LOGIC BARU: Promo Manual 15x dapat tambahan 1 sesi
         if (strtolower($user->package->transmisi ?? '') == 'manual' && $max == 15) {
             $max += 1;
         }
 
-        $count = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         if ($count >= $max) {
             return back()->with('error', "Kuota pertemuan paket Anda sudah habis.");
         }
@@ -105,8 +141,6 @@ class DashboardController extends Controller
 
         $jamMulai = (int) substr($request->jam_mulai, 0, 2);
         
-        // 🔥 LOGIC IZIN JAM 12:00 SUDAH DIBUKA (Pengecekan penolakan jam 12 telah dihapus)
-
         $kategoriPaket = $user->package->kategori ?? 'Reguler';
         $is_extra = 0; 
         $status_bayar = 'Tidak Ada';

@@ -77,7 +77,6 @@
                                 <th class="py-3">Nama Siswa</th>
                                 <th class="py-3">Rincian Tagihan</th>
                                 <th class="py-3">Total (Rp)</th>
-                                <!-- 🔥 KOLOM BARU -->
                                 <th class="py-3 text-center">Metode Bayar</th>
                                 <th class="py-3 text-center">Status Bukti</th>
                                 <th class="py-3 text-center">Aksi / Verifikasi</th>
@@ -86,15 +85,12 @@
                         <tbody>
                             @forelse($pembayarans as $p)
                             
-                            <!-- 🔥 LOGIC BLADE: Ekstrak Metode Pembayaran dari Keterangan -->
                             @php
                                 $metode = 'Belum Ada';
                                 $ket_bersih = $p->keterangan;
                                 
-                                // Cari pola (Via Bank: ...) atau (Via: ...)
                                 if (preg_match('/\(Via(?: Bank)?: (.*?)\)/', $p->keterangan, $matches)) {
                                     $metode = $matches[1];
-                                    // Hapus teks metode dari keterangan utama biar nggak tampil double
                                     $ket_bersih = preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $p->keterangan);
                                 } elseif ($p->bukti_bayar) {
                                     $metode = 'Upload Manual';
@@ -125,7 +121,6 @@
                                 </td>
                                 <td class="fw-bold text-success">Rp {{ number_format($p->total_tagihan, 0, ',', '.') }}</td>
                                 
-                                <!-- 🔥 TAMPILAN KOLOM BARU -->
                                 <td class="text-center">
                                     @if($metode == 'Belum Ada')
                                         <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 0.7rem;">Belum Bayar</span>
@@ -179,23 +174,43 @@
                                                     </div>
                                                 @endif
                                                 
-                                                <div class="text-start bg-light p-3 rounded border border-secondary-subtle mb-4 shadow-sm">
+                                                <div class="text-start bg-light p-3 rounded border border-secondary-subtle mb-3 shadow-sm">
                                                     <label class="fw-bold small mb-2 text-uppercase text-primary"><i class="bi bi-cloud-upload me-1"></i> Upload / Ganti Bukti (Opsional)</label>
                                                     <input type="file" name="bukti_bayar" class="form-control form-control-sm mb-2" accept="image/jpeg,image/png,image/jpg">
                                                     
-                                                    <!-- 🔥 FORM METODE BAYAR TAMBAHAN UNTUK ADMIN -->
                                                     <select name="metode_pembayaran" class="form-select form-select-sm shadow-sm">
                                                         <option value="">-- Metode Pembayaran (Pilih Jika Upload Bukti) --</option>
                                                         <option value="Tunai / Cash">Tunai / Cash (Bayar di Cabang)</option>
                                                         <option value="BCA">Transfer BCA</option>
                                                         <option value="BRI">Transfer BRI</option>
-                                                        <!-- 🔥 PENAMBAHAN OPSI QRIS -->
                                                         <option value="QRIS">Scan QRIS</option>
                                                     </select>
                                                     <small class="text-muted lh-1 mt-1 d-block" style="font-size: 0.7rem;">Gunakan opsi ini jika menerima uang pendaftaran siswa secara Offline.</small>
                                                 </div>
 
-                                                <div class="text-start mb-3">
+                                                <!-- 🔥 TAMBAHAN LOGIC SPLIT DP UNTUK ADMIN -->
+                                                @php
+                                                    $sudahAdaPelunasan = \App\Models\Pembayaran::where('user_id', $p->user_id)
+                                                        ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
+                                                        ->exists();
+                                                @endphp
+                                                
+                                                @if($p->jenis_tagihan == 'Paket Utama' && !$sudahAdaPelunasan)
+                                                <div class="text-start bg-white p-3 rounded border border-primary-subtle mb-4 shadow-sm">
+                                                    <label class="fw-bold small mb-2 text-uppercase text-primary"><i class="bi bi-pie-chart-fill me-1"></i> Set Pembayaran (DP/Full)</label>
+                                                    <select name="jenis_bayar" class="form-select shadow-sm mb-2" onchange="toggleAdminDp(this, 'adminDpInput{{ $p->id }}')">
+                                                        <option value="full">Full Payment (Sesuai Tagihan)</option>
+                                                        <option value="dp">Down Payment (DP)</option>
+                                                    </select>
+                                                    <div id="adminDpInput{{ $p->id }}" style="display: none;">
+                                                        <label class="fw-bold small mb-1 text-muted">Nominal DP yang Diterima (Rp)</label>
+                                                        <input type="number" name="nominal_dp" class="form-control shadow-sm" placeholder="Contoh: 500000" min="50000" max="{{ $p->total_tagihan - 10000 }}">
+                                                        <small class="text-danger d-block mt-1 lh-1" style="font-size:0.7rem;"><i class="bi bi-info-circle me-1"></i>Sisa tagihan otomatis dipecah dan dibuatkan tagihan Pelunasan ke dashboard siswa.</small>
+                                                    </div>
+                                                </div>
+                                                @endif
+
+                                                <div class="text-start mb-3 border-top pt-3">
                                                     <label class="fw-bold small mb-2 text-uppercase text-muted">Ubah Status Invoice</label>
                                                     <select name="status" class="form-select shadow-sm" onchange="toggleAlasan(this, 'alasanTolak{{ $p->id }}')" required>
                                                         <option value="Pending" {{ $p->status == 'Pending' ? 'selected' : '' }}>Pending (Menunggu/Belum Lunas)</option>
@@ -279,6 +294,18 @@
             } else {
                 targetDiv.style.display = 'none';
                 textArea.removeAttribute('required');
+            }
+        }
+
+        // 🔥 FUNGSI TOGGLE INPUT DP UNTUK ADMIN
+        function toggleAdminDp(selectElement, targetId) {
+            const dpInput = document.getElementById(targetId);
+            if (selectElement.value === 'dp') {
+                dpInput.style.display = 'block';
+                dpInput.querySelector('input').setAttribute('required', 'required');
+            } else {
+                dpInput.style.display = 'none';
+                dpInput.querySelector('input').removeAttribute('required');
             }
         }
     </script>

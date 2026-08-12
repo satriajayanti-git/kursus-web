@@ -58,11 +58,14 @@ class KeuanganController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
+        // 🔥 VALIDASI TAMBAHAN UNTUK DP ADMIN
         $request->validate([
             'status' => 'required|in:Pending,Lunas,Ditolak',
             'penolakan' => 'nullable|string',
             'bukti_bayar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'metode_pembayaran' => 'nullable|string'
+            'metode_pembayaran' => 'nullable|string',
+            'jenis_bayar' => 'nullable|in:full,dp',
+            'nominal_dp' => 'nullable|numeric|min:50000'
         ]);
 
         $pembayaran = Pembayaran::findOrFail($id);
@@ -90,15 +93,45 @@ class KeuanganController extends Controller
             $data['bukti_bayar'] = $namaFile;
         }
 
+        $keteranganUpdate = $pembayaran->keterangan;
         if ($request->filled('metode_pembayaran')) {
-            $keteranganUpdate = $pembayaran->keterangan;
             $keteranganUpdate = preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $keteranganUpdate);
-
-            $data['keterangan'] = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
+            $keteranganUpdate = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
         }
 
+        // 🔥 LOGIC SPLIT INVOICE (VIA VERIFIKASI ADMIN)
+        if ($request->status == 'Lunas' && $request->jenis_bayar === 'dp' && $pembayaran->jenis_tagihan === 'Paket Utama' && $request->nominal_dp) {
+            
+            $sudahAdaPelunasan = Pembayaran::where('user_id', $pembayaran->user_id)
+                ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
+                ->exists();
+
+            if (!$sudahAdaPelunasan) {
+                $nominalDp = $request->nominal_dp;
+                $sisaTagihan = $pembayaran->total_tagihan - $nominalDp;
+
+                if ($sisaTagihan > 0) {
+                    $data['total_tagihan'] = $nominalDp; // Update tagihan utama jadi harga DP
+                    $keteranganUpdate = $keteranganUpdate . ' [Lunas DP Sebagian]';
+
+                    // Buat invoice Pelunasan ke dashboard siswa
+                    Pembayaran::create([
+                        'user_id'       => $pembayaran->user_id,
+                        'branch_id'     => $pembayaran->branch_id,
+                        'total_tagihan' => $sisaTagihan,
+                        'jenis_tagihan' => 'Tambahan',
+                        'keterangan'    => 'Pelunasan Sisa Pembayaran Paket Utama',
+                        'status'        => 'Pending' // Akan tertagih ke siswa
+                    ]);
+                }
+            }
+        }
+        $data['keterangan'] = $keteranganUpdate;
+
+        // Eksekusi Update ke Database
         $pembayaran->update($data);
 
+        // 🔥 LOGIC AKTIVASI SISWA: Tetap aktif baik lunas Full maupun lunas DP
         if ($pembayaran->jenis_tagihan === 'Paket Utama') {
             $siswa = User::find($pembayaran->user_id);
 
@@ -111,7 +144,7 @@ class KeuanganController extends Controller
             }
         }
 
-        return back()->with('success', 'Keputusan validasi dan bukti pembayaran berhasil disimpan!');
+        return back()->with('success', 'Keputusan validasi pembayaran berhasil disimpan!');
     }
 
     public function storeTambahan(Request $request)

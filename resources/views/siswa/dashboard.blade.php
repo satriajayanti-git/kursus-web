@@ -134,9 +134,7 @@
 
             <div class="tab-content" id="v-pills-tabContent">
                 
-                <!-- ============================ -->
                 <!-- PANE 1: DASHBOARD (PENJADWALAN) -->
-                <!-- ============================ -->
                 <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel">
                     
                     <div class="card card-custom bg-primary text-white p-4 mb-4">
@@ -232,9 +230,7 @@
                     </div>
                 </div>
 
-                <!-- ============================ -->
                 <!-- PANE 2: RIWAYAT BELAJAR -->
-                <!-- ============================ -->
                 <div class="tab-pane fade" id="pane-belajar" role="tabpanel">
                     <h4 class="fw-bold mb-4"><i class="bi bi-journal-check me-2 text-primary"></i>Riwayat & Evaluasi Belajar</h4>
                     
@@ -325,11 +321,14 @@
                     </div>
                 </div>
 
-                <!-- ============================ -->
                 <!-- PANE 3: KEUANGAN & TAGIHAN -->
-                <!-- ============================ -->
                 <div class="tab-pane fade" id="pane-keuangan" role="tabpanel">
                     <h4 class="fw-bold mb-4"><i class="bi bi-wallet2 me-2 text-primary"></i>Informasi Tagihan & Keuangan</h4>
+
+                    @php
+                        // 🔥 Mengecek apakah tagihan utama sudah pernah displit menjadi DP (Mencegah double split)
+                        $sudahAdaPelunasan = $tagihanTambahan->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')->count() > 0;
+                    @endphp
 
                     <div class="row g-4">
                         <div class="col-lg-5">
@@ -337,8 +336,12 @@
                             @if($tagihanUtama)
                                 <div class="card card-custom p-4 bg-white shadow-sm mb-4 {{ $tagihanUtama->status == 'Ditolak' ? 'border border-danger' : '' }}">
                                     <h5 class="fw-bold mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Tagihan Paket Utama</h5>
+                                    
                                     <h4 class="fw-bolder text-dark mb-1">Rp {{ number_format($tagihanUtama->total_tagihan,0,',','.') }}</h4>
-                                    <p class="small text-muted fw-bold">{{ $user->package->nama_package ?? 'Paket' }}</p>
+                                    <p class="small text-muted fw-bold mb-3">
+                                        {{ $user->package->nama_package ?? 'Paket' }}
+                                        @if($sudahAdaPelunasan) <span class="badge bg-warning text-dark ms-1">Status: Down Payment (DP)</span> @endif
+                                    </p>
 
                                     @if($tagihanUtama->status == 'Ditolak')
                                         <div class="alert alert-danger border-0 shadow-sm p-3 mb-3 rounded-4">
@@ -356,23 +359,46 @@
                                             </ul>
                                         </div>
                                         
-                                        <!-- 🔥 FORM UPLOAD (QRIS DINAMIS) -->
                                         <form action="{{ url('/siswa/bayar/' . $tagihanUtama->id) }}" method="POST" enctype="multipart/form-data">
                                             @csrf
+
+                                            <!-- 🔥 FITUR SPLIT INVOICE (FULL / DP) -->
+                                            <!-- Fitur ini HANYA TAMPIL jika ini adalah pembayaran pertama kali (bukti_bayar masih null) dan belum pernah displit -->
+                                            @if(!$sudahAdaPelunasan && !$tagihanUtama->bukti_bayar)
+                                            <div class="mb-3 p-3 border border-primary-subtle rounded-4 bg-white shadow-sm">
+                                                <label class="small text-muted fw-bold mb-2">Pilihan Pembayaran Awal:</label>
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="jenis_bayar" id="bayarFull" value="full" checked onchange="toggleDpInput()">
+                                                        <label class="form-check-label fw-bold small text-dark" for="bayarFull">Full Payment</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="jenis_bayar" id="bayarDp" value="dp" onchange="toggleDpInput()">
+                                                        <label class="form-check-label fw-bold small text-dark" for="bayarDp">Down Payment (DP)</label>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Input Form Nominal DP -->
+                                                <div class="mt-3 pt-2 border-top" id="dpInputContainer" style="display: none;">
+                                                    <label class="small text-muted fw-bold mb-1">Nominal DP yang akan dibayar (Rp):</label>
+                                                    <input type="number" name="nominal_dp" id="nominalDp" class="form-control form-control-sm shadow-sm" placeholder="Contoh: 500000" min="50000" max="{{ $tagihanUtama->total_tagihan - 10000 }}">
+                                                    <div class="form-text text-danger" style="font-size: 0.7rem;"><i class="bi bi-info-circle-fill me-1"></i>Sisa kekurangan otomatis masuk ke Tagihan Tambahan (Wajib dilunasi tanpa dicicil lagi).</div>
+                                                </div>
+                                            </div>
+                                            @endif
+
                                             <div class="mb-3">
                                                 <label class="small text-muted fw-bold mb-1">Pilih Bank Tujuan Transfer:</label>
                                                 <select name="metode_pembayaran" class="form-select form-select-sm shadow-sm" onchange="toggleQris(this, 'qrisUtama')" required>
                                                     <option value="">-- Pilih Bank --</option>
                                                     <option value="BCA">Transfer ke BCA (7410689523)</option>
                                                     <option value="BRI">Transfer ke BRI (211401000434303)</option>
-                                                    <!-- Tampilkan opsi QRIS HANYA jika cabang ini punya foto QRIS -->
                                                     @if($user->branch && $user->branch->qris_image)
                                                         <option value="QRIS">Scan QRIS (Otomatis & Mudah)</option>
                                                     @endif
                                                 </select>
                                             </div>
                                             
-                                            <!-- 🔥 DIV UNTUK MUNCULKAN QR CODE TAGIHAN UTAMA -->
                                             <div id="qrisUtama" class="text-center mt-3 mb-3 p-3 bg-white rounded-4 border shadow-sm" style="display: none;">
                                                 <p class="small fw-bold text-dark mb-2">Scan QR Code Berikut:</p>
                                                 @if($user->branch && $user->branch->qris_image)
@@ -447,7 +473,6 @@
                                                         @if(!$tb->bukti_bayar || $tb->status == 'Ditolak')
                                                             <form action="{{ url('/siswa/bayar/' . $tb->id) }}" method="POST" enctype="multipart/form-data" class="mt-2 border-top pt-2">
                                                                 @csrf
-                                                                <!-- Tambahan Dropdown Bank + Fungsi QRIS Dinamis -->
                                                                 <select name="metode_pembayaran" class="form-select form-select-sm mb-2 shadow-sm" onchange="toggleQris(this, 'qrisTambahan{{ $tb->id }}')" required>
                                                                     <option value="">- Pilih Bank -</option>
                                                                     <option value="BCA">BCA (7410689523)</option>
@@ -457,7 +482,6 @@
                                                                     @endif
                                                                 </select>
 
-                                                                <!-- 🔥 DIV UNTUK MUNCULKAN QR CODE TAGIHAN TAMBAHAN -->
                                                                 <div id="qrisTambahan{{ $tb->id }}" class="text-center mb-3 p-2 bg-white rounded-3 border shadow-sm" style="display: none;">
                                                                     <p class="small fw-bold text-dark mb-2">Scan QR Code Berikut:</p>
                                                                     @if($user->branch && $user->branch->qris_image)
@@ -601,7 +625,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // SCRIPT SINKRONISASI TABS AGAR JALAN MULUS DI DESKTOP & MOBILE
+        // Script Sinkronisasi Tabs
         document.querySelectorAll('[data-bs-toggle="pill"]').forEach(btn => {
             btn.addEventListener('show.bs.tab', function (e) {
                 const target = e.target.getAttribute('data-bs-target');
@@ -616,7 +640,6 @@
             });
         });
 
-        // Script Tombol "Buka Tab Keuangan" dari Dashboard
         document.querySelectorAll('.switch-tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const targetPane = this.getAttribute('data-target');
@@ -625,7 +648,32 @@
             });
         });
 
-        // 🔥 LOGIC JAVASCRIPT UNTUK POPUP JAM NON-REGULER
+        // 🔥 LOGIC MENAMPILKAN INPUT NOMINAL DP
+        function toggleDpInput() {
+            const isDp = document.getElementById('bayarDp') ? document.getElementById('bayarDp').checked : false;
+            const dpContainer = document.getElementById('dpInputContainer');
+            const dpInput = document.getElementById('nominalDp');
+            
+            if(dpContainer && dpInput) {
+                if(isDp) {
+                    dpContainer.style.display = 'block';
+                    dpInput.required = true;
+                } else {
+                    dpContainer.style.display = 'none';
+                    dpInput.required = false;
+                }
+            }
+        }
+
+        function toggleQris(selectElement, targetDivId) {
+            const qrisDiv = document.getElementById(targetDivId);
+            if (selectElement.value === 'QRIS') {
+                qrisDiv.style.display = 'block'; 
+            } else {
+                qrisDiv.style.display = 'none'; 
+            }
+        }
+
         const formAjukan = document.getElementById('formAjukanJadwal');
         if (formAjukan) {
             formAjukan.addEventListener('submit', function(e) {
@@ -657,16 +705,6 @@
                 formAjukan.appendChild(input);
                 formAjukan.submit();
             });
-        }
-
-        // 🔥 FUNGSI JAVASCRIPT UNTUK MENAMPILKAN / MENYEMBUNYIKAN GAMBAR QRIS
-        function toggleQris(selectElement, targetDivId) {
-            const qrisDiv = document.getElementById(targetDivId);
-            if (selectElement.value === 'QRIS') {
-                qrisDiv.style.display = 'block'; 
-            } else {
-                qrisDiv.style.display = 'none'; 
-            }
         }
     </script>
 </body>
