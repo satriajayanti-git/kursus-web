@@ -214,6 +214,15 @@
                                 </div>
                             </div>
 
+                            <!-- 🔥 PENAMBAHAN FIELD ALAMAT DOMISILI -->
+                            <div class="mb-3">
+                                <label class="form-label">Alamat Domisili</label>
+                                <div class="input-group">
+                                    <span class="input-group-text align-items-start pt-3"><i class="bi bi-house-door"></i></span>
+                                    <textarea name="alamat" class="form-control border-start-0 ps-0" rows="2" placeholder="Masukkan alamat lengkap tempat tinggal saat ini..." required>{{ old('alamat') }}</textarea>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Lokasi Cabang Latihan</label>
                                 <div class="input-group">

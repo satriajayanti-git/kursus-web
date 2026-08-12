@@ -20,12 +20,14 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
+        // 🔥 VALIDASI BARU: Menambahkan field 'alamat'
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'username'     => 'required|string|max:255|unique:users',
             'email'        => 'required|email|unique:users',
             'password'     => 'required|string|min:6',
             'no_telp'      => 'required|string|max:20',
+            'alamat'       => 'required|string', 
             'branch_id'    => 'required|exists:branches,id',
             'package_id'   => 'required|exists:packages,id_package' 
         ]);
@@ -54,14 +56,15 @@ class RegisterController extends Controller
                 $id_siswa_baru = $formatDepan . '01';
             }
 
-            // 1. Simpan User Siswa beserta ID Cerdas-nya
+            // 1. Simpan User Siswa beserta ID Cerdas dan Alamat
             $user = User::create([
-                'id_siswa'     => $id_siswa_baru, // 🔥 Injeksi field ID Siswa ke database
+                'id_siswa'     => $id_siswa_baru, 
                 'nama_lengkap' => $request->nama_lengkap,
                 'username'     => $request->username,
                 'email'        => $request->email,
                 'password'     => Hash::make($request->password),
                 'no_telp'      => $request->no_telp,
+                'alamat'       => $request->alamat, // 🔥 Injeksi field alamat ke database
                 'role'         => 'siswa',
                 'branch_id'    => $request->branch_id,
                 'id_package'   => $request->package_id, 
