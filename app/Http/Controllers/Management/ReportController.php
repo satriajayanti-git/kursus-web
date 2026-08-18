@@ -57,14 +57,23 @@ class ReportController extends Controller
                 $adminFilter = User::find($admin_id);
                 
                 $query->where(function($q) use ($admin_id, $adminFilter) {
+                    // 1. Wajib cocok dengan ID admin yang bersangkutan
                     $q->where('approved_by', $admin_id);
                     
-                    // Fallback dipertahankan khusus untuk transaksi SANGAT LAMA (sebelum update) yang belum ada id_admin-nya
+                    // 2. 🔥 PERBAIKAN LOGIC FALLBACK: 
+                    // Hanya bebankan transaksi lawas (null) kepada ADMIN UTAMA cabang tersebut, BUKAN ke admin backup.
                     if ($adminFilter && $adminFilter->branch_id) {
-                        $q->orWhere(function($subQ) use ($adminFilter) {
-                            $subQ->whereNull('approved_by')
-                                 ->where('branch_id', $adminFilter->branch_id);
-                        });
+                        $adminUtama = User::where('role', 'admin')
+                                          ->where('branch_id', $adminFilter->branch_id)
+                                          ->orderBy('id', 'asc') // Asumsi admin yg pertama kali dibuat adalah admin utama
+                                          ->first();
+                                          
+                        if ($adminUtama && $adminUtama->id == $admin_id) {
+                            $q->orWhere(function($subQ) use ($adminFilter) {
+                                $subQ->whereNull('approved_by')
+                                     ->where('branch_id', $adminFilter->branch_id);
+                            });
+                        }
                     }
                 });
             }
@@ -72,13 +81,10 @@ class ReportController extends Controller
             $data = $query->orderBy('updated_at', 'desc')->get();
             $total = $data->sum('total_tagihan');
 
-            // 🔥 REVISI LOGIC MAPPING PIC ADMIN: Memprioritaskan Relasi 'approver' dari Auth::id() terbaru
             foreach ($data as $item) {
                 if ($item->approver) {
-                    // Jika ada approved_by, otomatis ambil nama admin spesifik (Termasuk Backup Admin)
                     $item->pic_name = $item->approver->nama_admin ?? $item->approver->nama_lengkap ?? 'Admin Cabang';
                 } else {
-                    // Jika null (transaksi lawas yang terlanjur lunas sebelum fitur ini rilis) baru dialihkan ke admin default
                     $adminCabang = $branchAdmins->get($item->branch_id)->first() ?? null;
                     $item->pic_name = $adminCabang ? ($adminCabang->nama_admin ?? $adminCabang->nama_lengkap) : 'Pusat / Admin';
                 }

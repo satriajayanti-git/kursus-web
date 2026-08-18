@@ -21,5 +21,7 @@ class Pembayaran extends Model
     public function user() { return $this->belongsTo(User::class, 'user_id'); }
     public function branch() { return $this->belongsTo(Branch::class, 'branch_id'); }
     public function package() { return $this->belongsTo(Package::class, 'id_package', 'id_package'); }
+    
+    // 🔥 RELASI PIC ADMIN: Digunakan untuk memanggil nama admin di laporan cetak
     public function approver() { return $this->belongsTo(User::class, 'approved_by'); }
 }

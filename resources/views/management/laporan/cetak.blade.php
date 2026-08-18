@@ -39,17 +39,21 @@
                 @if($jenis == 'keuangan') LAPORAN KEUANGAN & PENDAPATAN @else LAPORAN PENDAFTARAN SISWA @endif
             </h4>
             <p class="mb-0">Periode: {{ date('d M Y', strtotime($tgl_awal)) }} s/d {{ date('d M Y', strtotime($tgl_akhir)) }}</p>
+            <p class="mb-0 fw-bold">Area: {{ strtoupper($nama_cabang) }} @if($jenis == 'keuangan') | PIC: {{ strtoupper($nama_admin) }} @endif</p>
         </div>
 
         <table class="table table-laporan w-100">
             <thead>
                 @if($jenis == 'keuangan')
                     <tr>
-                        <th width="5%">No</th>
-                        <th width="15%">Tgl Lunas</th>
-                        <th width="25%">Nama Siswa</th>
-                        <th width="35%">Keterangan Pembayaran</th>
-                        <th width="20%">Nominal (Rp)</th>
+                        <!-- 🔥 KEMBALIKAN KOLOM CABANG, NAMA SISWA LENGKAP & PIC ADMIN -->
+                        <th width="3%">No</th>
+                        <th width="10%">Tgl Lunas</th>
+                        <th width="12%">Cabang</th>
+                        <th width="20%">ID & Nama Siswa</th>
+                        <th width="25%">Keterangan Pembayaran</th>
+                        <th width="15%">PIC Admin</th>
+                        <th width="15%">Nominal (Rp)</th>
                     </tr>
                 @else
                     <tr>
@@ -67,9 +71,17 @@
                         <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ date('d/m/Y', strtotime($item->updated_at)) }}</td>
-                            <td>{{ $item->user->nama_lengkap ?? 'Unknown' }}</td>
+                            
+                            <!-- 🔥 DATA CABANG -->
+                            <td class="text-center fw-bold">{{ $item->branch->nama_cabang ?? 'Pusat' }}</td>
+                            
+                            <!-- 🔥 DATA ID & NAMA SISWA -->
                             <td>
-                                <!-- 🔥 LOGIC BARU: Deteksi Metode Bayar (Termasuk QRIS) untuk ditampilkan di PDF -->
+                                <span class="fw-bold">{{ $item->user->id_siswa ?? '-' }}</span><br>
+                                {{ $item->user->nama_lengkap ?? 'Unknown' }}
+                            </td>
+                            
+                            <td>
                                 @php
                                     $metode = '';
                                     if(preg_match('/\(Via(?: Bank)?: (.*?)\)/', $item->keterangan, $match)) {
@@ -84,7 +96,6 @@
                                         $metode = 'Tunai (Cabang)';
                                     }
                                     
-                                    // Hilangkan tulisan "Via" dari keterangan asli agar tidak dobel
                                     $keteranganBersih = preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $item->keterangan);
                                 @endphp
 
@@ -98,7 +109,11 @@
                                     <br><span class="badge-print mt-1">Metode: {{ $metode }}</span>
                                 @endif
                             </td>
-                            <td class="text-end">Rp {{ number_format($item->total_tagihan, 0, ',', '.') }}</td>
+                            
+                            <!-- 🔥 DATA PIC ADMIN -->
+                            <td class="text-center fw-bold fst-italic">{{ $item->pic_name }}</td>
+                            
+                            <td class="text-end fw-bold">Rp {{ number_format($item->total_tagihan, 0, ',', '.') }}</td>
                         </tr>
                     @else
                         <tr>
@@ -106,7 +121,7 @@
                             <td class="text-center">{{ date('d/m/Y', strtotime($item->created_at)) }}</td>
                             
                             <td>
-                                <span class="fw-bold">{{ $item->id_siswa ?? 'SJN-LAMA' }}</span><br>
+                                <span class="fw-bold">{{ $item->id_siswa ?? '-' }}</span><br>
                                 {{ $item->nama_lengkap }}
                             </td>
                             
@@ -122,14 +137,14 @@
                         </tr>
                     @endif
                 @empty
-                    <tr><td colspan="5" class="text-center py-4 fst-italic">Tidak ada data pada periode ini.</td></tr>
+                    <tr><td colspan="{{ $jenis == 'keuangan' ? '7' : '5' }}" class="text-center py-4 fst-italic">Tidak ada data pada periode ini.</td></tr>
                 @endforelse
             </tbody>
             
             @if($jenis == 'keuangan' && count($data) > 0)
                 <tfoot>
                     <tr>
-                        <th colspan="4" class="text-end pe-3 fw-bold">TOTAL PENDAPATAN :</th>
+                        <th colspan="6" class="text-end pe-3 fw-bold">TOTAL PENDAPATAN :</th>
                         <th class="text-end fw-bold">Rp {{ number_format($total, 0, ',', '.') }}</th>
                     </tr>
                 </tfoot>
