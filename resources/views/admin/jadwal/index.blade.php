@@ -26,13 +26,24 @@
             </div>
 
             <div class="card border-0 shadow-sm mb-4 p-3 rounded-4">
-                <form action="{{ url('/admin/jadwal') }}" method="GET" class="d-flex gap-2">
+                <form action="{{ url('/admin/jadwal') }}" method="GET" class="d-flex gap-2 align-items-center">
                     <input type="hidden" name="status" value="{{ $status ?? 'Pending' }}">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama siswa..." value="{{ $search ?? '' }}">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama siswa..." value="{{ request('search') ?? '' }}">
                     </div>
+                    
+                    <!-- 🔥 REVISI: TAMBAHAN FILTER TANGGAL -->
+                    <div class="input-group" style="max-width: 250px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-date text-muted"></i></span>
+                        <input type="date" name="tanggal" class="form-control border-start-0 text-muted" value="{{ request('tanggal') ?? '' }}">
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill shadow-sm">Cari</button>
+                    
+                    @if(request('search') || request('tanggal'))
+                        <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending')) }}" class="btn btn-light border px-3 fw-bold rounded-pill shadow-sm" title="Reset Filter"><i class="bi bi-arrow-repeat"></i></a>
+                    @endif
                 </form>
             </div>
 
@@ -47,35 +58,39 @@
                 </div>
             @endif
 
-            @php $status = $status ?? 'Pending'; @endphp
+            @php 
+                $status = $status ?? 'Pending'; 
+                $qSearch = request('search') ? '&search='.request('search') : '';
+                $qTanggal = request('tanggal') ? '&tanggal='.request('tanggal') : '';
+            @endphp
             <ul class="nav nav-pills mb-4 gap-2">
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Pending' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Pending' . ($search ? '&search='.$search : '')) }}">
+                       href="{{ url('/admin/jadwal?status=Pending' . $qSearch . $qTanggal) }}">
                         <i class="bi bi-hourglass-split me-1"></i> Pending
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Disetujui' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Disetujui' . ($search ? '&search='.$search : '')) }}">
+                       href="{{ url('/admin/jadwal?status=Disetujui' . $qSearch . $qTanggal) }}">
                         <i class="bi bi-calendar-check me-1"></i> Aktif / Berjalan
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Selesai' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Selesai' . ($search ? '&search='.$search : '')) }}">
+                       href="{{ url('/admin/jadwal?status=Selesai' . $qSearch . $qTanggal) }}">
                         <i class="bi bi-check-all me-1"></i> Selesai Latihan
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Dibatalkan' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Dibatalkan' . ($search ? '&search='.$search : '')) }}">
+                       href="{{ url('/admin/jadwal?status=Dibatalkan' . $qSearch . $qTanggal) }}">
                         <i class="bi bi-x-circle me-1"></i> Dibatalkan
                     </a>
                 </li>
                 <li class="nav-item ms-auto">
                     <a class="nav-link {{ $status == 'all' ? 'active shadow-sm fw-bold bg-dark text-white' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=all' . ($search ? '&search='.$search : '')) }}">
+                       href="{{ url('/admin/jadwal?status=all' . $qSearch . $qTanggal) }}">
                         <i class="bi bi-collection me-1"></i> Semua Data
                     </a>
                 </li>
@@ -141,7 +156,7 @@
                         <tr>
                             <td colspan="4" class="text-center py-5">
                                 <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
-                                <p class="text-muted mb-0">Belum ada data jadwal pada kategori ini.</p>
+                                <p class="text-muted mb-0">Belum ada data jadwal pada kategori/tanggal ini.</p>
                             </td>
                         </tr>
                         @endforelse
@@ -168,7 +183,6 @@
                         </div>
 
                         <div class="row">
-                            <!-- 🔥 FIX: Inject data-transmisi ke Select Siswa -->
                             <div class="col-md-12 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Pilih Siswa (Sudah Lunas)</label>
                                 <select name="user_id" class="form-select shadow-sm" required>
@@ -214,7 +228,6 @@
                                 </select>
                             </div>
 
-                            <!-- 🔥 FIX: Inject data-transmisi ke Select Unit -->
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
                                 <select name="unit_id" id="unit_id_new" class="form-select shadow-sm unit-select" required>
@@ -278,6 +291,8 @@
                                     <option value="15:00" {{ $j->jam_mulai == '15:00' ? 'selected' : '' }}>15:00 - 16:00 WIB</option>
                                     <option value="16:00" {{ $j->jam_mulai == '16:00' ? 'selected' : '' }}>16:00 - 17:00 WIB</option>
                                     <option value="17:00" {{ $j->jam_mulai == '17:00' ? 'selected' : '' }}>17:00 - 18:00 WIB</option>
+                                    <!-- 🔥 REVISI: PENAMBAHAN OPSI 18:00 - 19:00 -->
+                                    <option value="18:00" {{ $j->jam_mulai == '18:00' ? 'selected' : '' }}>18:00 - 19:00 WIB</option>
                                     <option value="19:00" {{ $j->jam_mulai == '19:00' ? 'selected' : '' }}>19:00 - 20:00 WIB</option>
                                 </select>
                             </div>
@@ -342,7 +357,6 @@
                                 </select>
                             </div>
 
-                            <!-- Inject data-transmisi ke Option -->
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
                                 <select name="unit_id" id="unit_id_{{ $j->id }}" class="form-select shadow-sm unit-select" required>

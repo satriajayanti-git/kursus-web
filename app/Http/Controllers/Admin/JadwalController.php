@@ -52,6 +52,11 @@ class JadwalController extends Controller
             });
         }
 
+        // 🔥 REVISI: LOGIC FILTER TANGGAL LATIHAN
+        if ($request->filled('tanggal')) {
+            $query->where('tanggal', $request->tanggal);
+        }
+
         $jadwals = $query->orderBy('tanggal', 'desc')->orderBy('jam_mulai', 'asc')->get();
         
         $instructors = User::where('role', 'instruktur')
@@ -70,8 +75,9 @@ class JadwalController extends Controller
             ->get();
 
         $search = $request->search;
+        $tanggal = $request->tanggal; // Parameter filter agar di-lempar ke View
 
-        return view('admin.jadwal.index', compact('jadwals', 'instructors', 'units', 'siswas', 'status', 'search'));
+        return view('admin.jadwal.index', compact('jadwals', 'instructors', 'units', 'siswas', 'status', 'search', 'tanggal'));
     }
 
     public function store(Request $request)
@@ -91,16 +97,14 @@ class JadwalController extends Controller
         // 1. Cek Kuota Sesi
         $maxSesi = $siswa->package->pertemuan ?? 0;
 
-        // 🔥 LOGIC BARU: Cek promo Free 1 Jam khusus Manual 15x
         if (strtolower($siswa->package->transmisi ?? '') == 'manual' && $maxSesi == 15) {
-            $maxSesi += 1; // Sistem akan merubah batas maksimal menjadi 16 khusus untuk kondisi ini
+            $maxSesi += 1; 
         }
 
         $sesiTerpakai = Jadwal::where('user_id', $siswa->id)->where('status', '!=', 'Batal')->count();
         if ($sesiTerpakai >= $maxSesi) {
             return back()->with('error', 'SISTEM MENOLAK: Kuota pertemuan siswa ini sudah habis (' . $sesiTerpakai . '/' . $maxSesi . ').');
         }
-
 
         // 2. Cek Validasi Transmisi (MUTLAK: Instruktur vs Unit Mobil)
         $transmisiSiswa = $siswa->package->transmisi ?? 'Manual';
@@ -157,8 +161,6 @@ class JadwalController extends Controller
         // 8. Cek Extra Charge Lembut (Jam >= 16:00 Reguler)
         $jamMulaiInt = (int) substr($request->jam_mulai, 0, 2);
         
-        // 🔥 LOGIC IZIN JAM 12:00 SUDAH DIBUKA (Pengecekan penolakan jam 12 telah dihapus)
-
         $is_extra = 0;
         $status_pembayaran_extra = 'Tidak Ada';
 
@@ -260,7 +262,6 @@ class JadwalController extends Controller
             $instructor = User::findOrFail($instructor_id);
             $unit = Unit::findOrFail($unit_id);
 
-            // Validasi Mutlak Instruktur vs Unit
             $transmisiSiswa = $jadwal->user->package->transmisi ?? 'Manual';
             $transmisiUnit = $unit->transmisi;
             $transmisiInstruktur = $instructor->kategori_transmisi;
@@ -272,9 +273,7 @@ class JadwalController extends Controller
                 }
             }
 
-            // Logic Cek Tagihan Pindah Matic
             if ($transmisiSiswa === 'Manual' && $transmisiUnit === 'Matic') {
-                // Cegah duplicate charge untuk jadwal yang sama
                 $sudah_charge = Pembayaran::where('user_id', $jadwal->user_id)
                     ->where('keterangan', 'like', 'Biaya charge pindah transmisi Manual ke Matic (Jadwal: ' . $jadwal->tanggal . ')%')
                     ->exists();
@@ -307,7 +306,6 @@ class JadwalController extends Controller
             }
         }
 
-        // Eksekusi Generate Tagihan Baru (Jika Berlaku)
         if ($is_pindah_matic && in_array($statusUpdate, ['Disetujui', 'Selesai'])) {
             Pembayaran::create([
                 'user_id'       => $jadwal->user_id,
