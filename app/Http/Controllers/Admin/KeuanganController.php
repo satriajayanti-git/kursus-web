@@ -58,7 +58,6 @@ class KeuanganController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        // 🔥 VALIDASI TAMBAHAN UNTUK DP ADMIN
         $request->validate([
             'status' => 'required|in:Pending,Lunas,Ditolak',
             'penolakan' => 'nullable|string',
@@ -72,6 +71,8 @@ class KeuanganController extends Controller
 
         $data = [
             'status' => $request->status,
+            // 🔥 REVISI AUDIT KEUANGAN: Catat ID admin spesifik yang memproses transaksi
+            'approved_by' => Auth::id(), 
         ];
 
         if ($request->status == 'Ditolak') {
@@ -99,7 +100,7 @@ class KeuanganController extends Controller
             $keteranganUpdate = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
         }
 
-        // 🔥 LOGIC SPLIT INVOICE (VIA VERIFIKASI ADMIN)
+        // LOGIC SPLIT INVOICE (VIA VERIFIKASI ADMIN)
         if ($request->status == 'Lunas' && $request->jenis_bayar === 'dp' && $pembayaran->jenis_tagihan === 'Paket Utama' && $request->nominal_dp) {
             
             $sudahAdaPelunasan = Pembayaran::where('user_id', $pembayaran->user_id)
@@ -111,17 +112,17 @@ class KeuanganController extends Controller
                 $sisaTagihan = $pembayaran->total_tagihan - $nominalDp;
 
                 if ($sisaTagihan > 0) {
-                    $data['total_tagihan'] = $nominalDp; // Update tagihan utama jadi harga DP
+                    $data['total_tagihan'] = $nominalDp; 
                     $keteranganUpdate = $keteranganUpdate . ' [Lunas DP Sebagian]';
 
-                    // Buat invoice Pelunasan ke dashboard siswa
                     Pembayaran::create([
                         'user_id'       => $pembayaran->user_id,
                         'branch_id'     => $pembayaran->branch_id,
                         'total_tagihan' => $sisaTagihan,
                         'jenis_tagihan' => 'Tambahan',
                         'keterangan'    => 'Pelunasan Sisa Pembayaran Paket Utama',
-                        'status'        => 'Pending' // Akan tertagih ke siswa
+                        'status'        => 'Pending',
+                        // approved_by dikosongkan dulu karena invoice ini belum dibayar
                     ]);
                 }
             }
@@ -131,7 +132,7 @@ class KeuanganController extends Controller
         // Eksekusi Update ke Database
         $pembayaran->update($data);
 
-        // 🔥 LOGIC AKTIVASI SISWA: Tetap aktif baik lunas Full maupun lunas DP
+        // LOGIC AKTIVASI SISWA
         if ($pembayaran->jenis_tagihan === 'Paket Utama') {
             $siswa = User::find($pembayaran->user_id);
 
@@ -162,6 +163,7 @@ class KeuanganController extends Controller
             'jenis_tagihan' => 'Tambahan',
             'keterangan' => $request->keterangan,
             'status' => 'Pending',
+            'approved_by' => Auth::id(), // Opsional: merekam admin pembuat tagihan
         ]);
 
         return back()->with('success', 'Tagihan tambahan berhasil dibuat!');
