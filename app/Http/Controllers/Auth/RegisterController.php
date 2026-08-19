@@ -20,7 +20,6 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
-        // 🔥 VALIDASI BARU: Menambahkan field 'alamat'
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'username'     => 'required|string|max:255|unique:users',
@@ -34,25 +33,29 @@ class RegisterController extends Controller
 
         DB::transaction(function () use ($request) {
             
-            // 🔥 LOGIC AUTO-GENERATE ID SISWA (SJN + Bulan + Tahun + Urutan)
+            // 🔥 LOGIC AUTO-GENERATE ID SISWA FORMAT BARU (SJN + Bulan + Tahun + ID Cabang + Urutan)
             $prefix = 'SJN';
-            $bulan = date('m'); // Contoh: 05 atau 06
-            $tahun = date('y'); // Contoh: 26
-            $formatDepan = $prefix . $bulan . $tahun; // Hasil sementara: SJN0626
+            $bulan = date('m'); 
+            $tahun = date('y'); 
+            
+            // Ambil ID Cabang dari input siswa dan jadikan 2 digit (contoh: 1 menjadi 01)
+            $idCabangPad = str_pad($request->branch_id, 2, '0', STR_PAD_LEFT);
+            
+            $formatDepan = $prefix . $bulan . $tahun . $idCabangPad; // Hasil: SJN082601
 
-            // Cari siswa terakhir yang daftar di bulan & tahun ini
+            // Cari siswa terakhir yang daftar di bulan, tahun, dan cabang yang sama
             $siswaTerakhir = User::where('role', 'siswa')
                                 ->where('id_siswa', 'like', $formatDepan . '%')
                                 ->orderBy('id_siswa', 'desc')
                                 ->first();
 
             if ($siswaTerakhir && $siswaTerakhir->id_siswa) {
-                // Jika sudah ada, ambil 2 digit terakhir dan tambah 1
-                $urutanTerakhir = (int) substr($siswaTerakhir->id_siswa, -2);
+                // Ambil sisa karakter urutan paling belakang
+                $urutanTerakhir = (int) substr($siswaTerakhir->id_siswa, strlen($formatDepan));
                 $urutanBaru = $urutanTerakhir + 1;
                 $id_siswa_baru = $formatDepan . str_pad($urutanBaru, 2, '0', STR_PAD_LEFT); 
             } else {
-                // Jika belum ada sama sekali di bulan ini, mulai dari urutan 01
+                // Jika belum ada sama sekali di cabang dan bulan ini, mulai dari urutan 01
                 $id_siswa_baru = $formatDepan . '01';
             }
 
@@ -64,7 +67,7 @@ class RegisterController extends Controller
                 'email'        => $request->email,
                 'password'     => Hash::make($request->password),
                 'no_telp'      => $request->no_telp,
-                'alamat'       => $request->alamat, // 🔥 Injeksi field alamat ke database
+                'alamat'       => $request->alamat, 
                 'role'         => 'siswa',
                 'branch_id'    => $request->branch_id,
                 'id_package'   => $request->package_id, 

@@ -18,10 +18,6 @@ class StudentController extends Controller
             return redirect('/admin/dashboard')->with('error', 'Akun Anda belum ditugaskan ke cabang manapun!');
         }
 
-        /**
-         * LOGIC SINKRONISASI:
-         * Mengambil data siswa aktif di cabang terkait dan mendukung pencarian via Smart ID.
-         */
         $query = User::with('package')
                     ->where('role', 'siswa')
                     ->where('branch_id', $admin->branch_id);
@@ -57,12 +53,15 @@ class StudentController extends Controller
             'id_package'   => 'required|exists:packages,id_package',
         ]);
 
-        // Generate Auto ID Siswa (Format: SJN + Bulan + Tahun + Urutan)
+        // 🔥 Generate Auto ID Siswa FORMAT BARU (SJN + Bulan + Tahun + ID Cabang + Urutan)
         $currentMonth = date('m'); 
         $currentYear = date('Y');  
         $currentYearShort = date('y'); 
         
-        $prefixId = 'SJN' . $currentMonth . $currentYearShort; 
+        // Ambil ID Cabang Admin dan jadikan 2 digit
+        $idCabangPad = str_pad($admin->branch_id, 2, '0', STR_PAD_LEFT);
+        
+        $prefixId = 'SJN' . $currentMonth . $currentYearShort . $idCabangPad; 
 
         $lastStudent = User::where('role', 'siswa')
             ->where('id_siswa', 'like', $prefixId . '%')
@@ -111,16 +110,13 @@ class StudentController extends Controller
         return back()->with('success', 'Akun siswa berhasil dibuat dengan ID ' . $id_siswa . '! Tagihan otomatis telah diterbitkan di menu Keuangan.');
     }
 
-    // MENGELOLA UPDATE DATA SISWA
     public function update(Request $request, $id)
     {
         $admin = Auth::user();
         $student = User::findOrFail($id);
 
-        // Simpan status lama sebelum diupdate untuk lapisan keamanan
         $statusAwal = $student->status;
 
-        // Keamanan: Pastikan Admin tidak mengedit siswa dari cabang lain
         if ($student->branch_id != $admin->branch_id) {
             return back()->with('error', 'Akses ditolak! Anda tidak dapat mengubah data siswa dari cabang lain.');
         }
@@ -128,7 +124,6 @@ class StudentController extends Controller
         $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'id_package'   => 'required|exists:packages,id_package',
-            // Validasi di bawah mengabaikan ID siswa yang sedang diubah agar tidak error unique
             'username'     => 'required|string|unique:users,username,' . $id,
             'email'        => 'required|email|unique:users,email,' . $id,
             'no_telp'      => 'required|string|max:20',
@@ -137,7 +132,6 @@ class StudentController extends Controller
             'password'     => 'nullable|string|min:6',
         ]);
 
-        // Proses Update Data (Kecuali ID Package)
         $student->nama_lengkap = $request->nama_lengkap;
         $student->username     = $request->username;
         $student->email        = $request->email;
@@ -145,12 +139,10 @@ class StudentController extends Controller
         $student->status       = $request->status;
         $student->alamat       = $request->alamat;
 
-        // 🔥 LOGIC KEAMANAN: Hanya ubah paket jika status AWAL siswa BUKAN 'Aktif'
         if ($statusAwal !== 'Aktif') {
             $student->id_package = $request->id_package;
         }
 
-        // Cek jika password diisi, maka update. Jika kosong, biarkan password lama
         if ($request->filled('password')) {
             $student->password = Hash::make($request->password);
         }
