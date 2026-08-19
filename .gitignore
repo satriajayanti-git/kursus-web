@@ -16,3 +16,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+# Mengabaikan semua isi folder uploads, KECUALI file .gitignore di dalamnya
+/storage/app/public/uploads/*
+!/storage/app/public/uploads/.gitignore
