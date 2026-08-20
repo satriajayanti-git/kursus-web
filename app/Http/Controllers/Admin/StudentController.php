@@ -32,7 +32,8 @@ class StudentController extends Controller
             });
         }
 
-        $students = $query->orderBy('created_at', 'desc')->get();
+        // 🔥 REVISI: Mengubah 'desc' menjadi 'asc' agar siswa baru berada di paling bawah
+        $students = $query->orderBy('created_at', 'asc')->get();
         $search = $request->search;
 
         return view('admin.siswa.index', compact('students', 'search'));
@@ -53,12 +54,10 @@ class StudentController extends Controller
             'id_package'   => 'required|exists:packages,id_package',
         ]);
 
-        // 🔥 Generate Auto ID Siswa FORMAT BARU (SJN + Bulan + Tahun + ID Cabang + Urutan)
         $currentMonth = date('m'); 
         $currentYear = date('Y');  
         $currentYearShort = date('y'); 
         
-        // Ambil ID Cabang Admin dan jadikan 2 digit
         $idCabangPad = str_pad($admin->branch_id, 2, '0', STR_PAD_LEFT);
         
         $prefixId = 'SJN' . $currentMonth . $currentYearShort . $idCabangPad; 
@@ -78,7 +77,6 @@ class StudentController extends Controller
 
         $id_siswa = $prefixId . str_pad($urutan, 2, '0', STR_PAD_LEFT);
 
-        // Buat Akun Siswa Baru
         $siswa = User::create([
             'id_siswa'     => $id_siswa,
             'nama_lengkap' => $request->nama_lengkap,
@@ -93,10 +91,8 @@ class StudentController extends Controller
             'status'       => 'Non-Aktif', 
         ]);
 
-        // Tarik Harga Paket Terkait
         $paket = Package::where('id_package', $request->id_package)->first();
 
-        // Generate Tagihan ke Modul Keuangan Secara Otomatis
         Pembayaran::create([
             'user_id'       => $siswa->id,
             'id_package'    => $paket->id_package,
