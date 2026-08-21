@@ -32,14 +32,12 @@ class StudentController extends Controller
             });
         }
 
-        // 🔥 REVISI: Mengubah 'desc' menjadi 'asc' agar siswa baru berada di paling bawah
-        $students = $query->orderBy('created_at', 'asc')->get();
+        $students = $query->orderBy('created_at', 'desc')->get();
         $search = $request->search;
 
         return view('admin.siswa.index', compact('students', 'search'));
     }
 
-    // LOGIC BYPASS ADMIN (Pendaftaran Offline/Walk-In)
     public function store(Request $request)
     {
         $admin = Auth::user();
@@ -59,7 +57,6 @@ class StudentController extends Controller
         $currentYearShort = date('y'); 
         
         $idCabangPad = str_pad($admin->branch_id, 2, '0', STR_PAD_LEFT);
-        
         $prefixId = 'SJN' . $currentMonth . $currentYearShort . $idCabangPad; 
 
         $lastStudent = User::where('role', 'siswa')
@@ -77,6 +74,7 @@ class StudentController extends Controller
 
         $id_siswa = $prefixId . str_pad($urutan, 2, '0', STR_PAD_LEFT);
 
+        // Buat Akun Siswa Baru & Kunci Nama Admin
         $siswa = User::create([
             'id_siswa'     => $id_siswa,
             'nama_lengkap' => $request->nama_lengkap,
@@ -88,7 +86,8 @@ class StudentController extends Controller
             'id_package'   => $request->id_package,
             'role'         => 'siswa',
             'branch_id'    => $admin->branch_id,
-            'status'       => 'Non-Aktif', 
+            'status'       => 'Non-Aktif',
+            'registered_by'=> $admin->id, // 🔥 Mengikat ID Admin yang mendaftarkan siswa ini secara permanen
         ]);
 
         $paket = Package::where('id_package', $request->id_package)->first();
