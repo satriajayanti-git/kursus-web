@@ -32,7 +32,8 @@ class StudentController extends Controller
             });
         }
 
-        $students = $query->orderBy('created_at', 'desc')->get();
+        // 🔥 REVISI: Mengembalikan 'desc' menjadi 'asc' agar siswa pendaftar terbaru berada di urutan paling bawah
+        $students = $query->orderBy('created_at', 'asc')->get();
         $search = $request->search;
 
         return view('admin.siswa.index', compact('students', 'search'));
