@@ -38,7 +38,11 @@
         }
         $namaSiswa = urlencode(explode(' ', $user->nama_lengkap)[0]);
         $namaPaket = urlencode($user->package->nama_package ?? 'Paket');
+        
         $waUrl = "https://wa.me/{$waAdmin}?text=Halo%20Admin,%20saya%20{$namaSiswa}%20baru%20saja%20mengunggah%20bukti%20pembayaran%20untuk%20{$namaPaket}.%20Mohon%20bantuannya%20untuk%20diverifikasi%20ya.";
+        
+        // 🔥 TAMBAHAN: Teks khusus untuk meminta bantuan WA (Card Dashboard)
+        $waUrlBantuan = "https://wa.me/{$waAdmin}?text=Halo%20Admin,%20saya%20{$namaSiswa}%20ingin%20meminta%20bantuan%20terkait%20jadwal%20latihan%20dan%20kursus%20saya.";
     @endphp
 
     <!-- MOBILE NAVBAR -->
@@ -71,7 +75,6 @@
             </div>
             <div class="p-3 flex-grow-1 nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
                 <div class="menu-label mb-2">Main Menu</div>
-                <!-- 🔥 Navigasi Tabs via Sidebar -->
                 <button class="nav-link-custom active" data-bs-toggle="pill" data-bs-target="#pane-dashboard" type="button" role="tab">
                     <i class="bi bi-calendar-plus-fill me-3"></i> Penjadwalan
                 </button>
@@ -159,8 +162,9 @@
                     @endif
 
                     <div class="row g-4">
-                        <div class="col-lg-5">
-                            <div class="card card-custom p-4 bg-white shadow-sm border border-primary-subtle h-100">
+                        <!-- 🔥 REVISI: Penyesuaian layout agar Card Bantuan WA sejajar -->
+                        <div class="col-lg-5 d-flex flex-column gap-3">
+                            <div class="card card-custom p-4 bg-white shadow-sm border border-primary-subtle flex-grow-1">
                                 <h6 class="text-muted small fw-bold text-uppercase mb-3">Informasi Paket</h6>
                                 <h5 class="fw-bold">{{ $user->package->nama_package ?? 'N/A' }}</h5>
                                 <h6 class="fw-bold text-secondary mb-4">{{ $user->package->kategori ?? 'N/A' }}</h6>
@@ -181,6 +185,19 @@
                                     <div class="progress-bar bg-primary" style="width: {{ $percent }}%"></div>
                                 </div>
                                 <p class="small text-muted mb-0">Total sisa sesi yang dapat diambil: <strong>{{ $sisaSesi }} Sesi</strong></p>
+                            </div>
+
+                            <!-- 🔥 REVISI: CARD BANTUAN WA ADMIN -->
+                            <div class="card card-custom p-4 shadow-sm text-white mt-auto" style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h5 class="fw-bold mb-1">Butuh Bantuan?</h5>
+                                        <p class="small mb-0 opacity-75">Chat admin cabang disini</p>
+                                    </div>
+                                    <a href="{{ $waUrlBantuan }}" target="_blank" class="btn btn-light text-success rounded-circle shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 55px; height: 55px; text-decoration: none;">
+                                        <i class="bi bi-whatsapp fs-2"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
@@ -648,7 +665,6 @@
             });
         });
 
-        // 🔥 LOGIC MENAMPILKAN INPUT NOMINAL DP
         function toggleDpInput() {
             const isDp = document.getElementById('bayarDp') ? document.getElementById('bayarDp').checked : false;
             const dpContainer = document.getElementById('dpInputContainer');

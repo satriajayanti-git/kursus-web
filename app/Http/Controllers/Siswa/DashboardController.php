@@ -22,7 +22,12 @@ class DashboardController extends Controller
                                     ->where('jenis_tagihan', 'Tambahan')
                                     ->orderBy('created_at', 'desc')->get();
         
-        $mySchedules = Jadwal::with('instructor')->where('user_id', $user->id)->orderBy('tanggal', 'desc')->get();
+        // 🔥 REVISI: Menyembunyikan jadwal yang berstatus Batal/Dibatalkan agar hilang dari halaman siswa
+        $mySchedules = Jadwal::with('instructor')
+                                    ->where('user_id', $user->id)
+                                    ->whereNotIn('status', ['Batal', 'Dibatalkan']) 
+                                    ->orderBy('tanggal', 'desc')->get();
+                                    
         $riwayatPembayaran = Pembayaran::where('user_id', $user->id)->orderBy('updated_at', 'desc')->get();
         
         $totalSesi = $user->package->pertemuan ?? 0;
@@ -31,6 +36,7 @@ class DashboardController extends Controller
             $totalSesi += 1;
         }
 
+        // Logic kuota ini sudah otomatis mengabaikan yang "Batal", sehingga kuota akan kembali bertambah.
         $sesiTerpakai = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         $sisaSesi = $totalSesi - $sesiTerpakai;
 
@@ -109,7 +115,6 @@ class DashboardController extends Controller
             return back()->with('error', 'Selesaikan pembayaran paket utama terlebih dahulu untuk mengaktifkan fitur jadwal.');
         }
 
-        // 🔥 LOGIC BARU: PEMBATASAN JADWAL UNTUK SISWA DP (MAKS 3 SESI)
         $tagihanPelunasan = Pembayaran::where('user_id', $user->id)
             ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
             ->where('status', '!=', 'Lunas')
@@ -117,7 +122,6 @@ class DashboardController extends Controller
 
         $count = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         
-        // Peringatan Blockir Jadwal jika sudah 3x latihan tapi belum lunas
         if ($tagihanPelunasan && $count >= 3) {
             return back()->with('error', 'AKSES DIBATASI: Anda masih memiliki Tagihan Pelunasan (Berstatus DP). Anda hanya bisa mengikuti maksimal 3 sesi latihan. Silakan lunasi kekurangan pada Tab Keuangan untuk membuka jadwal selanjutnya.');
         }
