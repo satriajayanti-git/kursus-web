@@ -267,6 +267,16 @@
         </div>
     </div>
 
+    <!-- 🔥 SCRIPT FIX BUG BACKDROP SAFARI (IPHONE) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Memindahkan seluruh modal ke elemen <body> agar terbebas dari bug backdrop Safari iOS
+            document.querySelectorAll('.modal').forEach(function (modalEl) {
+                document.body.appendChild(modalEl);
+            });
+        });
+    </script>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
