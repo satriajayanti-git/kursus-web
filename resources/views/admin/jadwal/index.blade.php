@@ -117,7 +117,8 @@
                                 <div class="d-flex align-items-center">
                                     <div>
                                         <div class="fw-bold small"><i class="bi bi-calendar-event me-2 text-primary"></i>{{ date('d M Y', strtotime($j->tanggal)) }}</div>
-                                        <small class="text-muted"><i class="bi bi-clock me-2"></i>{{ $j->jam_mulai }} WIB</small>
+                                        <!-- 🔥 Penambahan format jam selesai -->
+                                        <small class="text-muted"><i class="bi bi-clock me-2"></i>{{ date('H:i', strtotime($j->jam_mulai)) }} - {{ date('H:i', strtotime($j->jam_mulai) + 3600) }} WIB</small>
                                     </div>
                                     <button class="btn btn-link btn-sm ms-3 text-decoration-none fw-bold btn-ubah" data-bs-toggle="modal" data-bs-target="#modalReschedule{{ $j->id }}">
                                         <i class="bi bi-pencil-square"></i> Ubah

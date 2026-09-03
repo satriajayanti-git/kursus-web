@@ -90,7 +90,8 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold text-dark">{{ date('d M Y', strtotime($jadwal->tanggal)) }}</div>
-                                        <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ $jadwal->jam_mulai }} WIB</div>
+                                        <!-- 🔥 Penambahan format jam selesai -->
+                                        <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ date('H:i', strtotime($jadwal->jam_mulai)) }} - {{ date('H:i', strtotime($jadwal->jam_mulai) + 3600) }} WIB</div>
                                     </td>
                                     <td>
                                         <div class="fw-bold">{{ $jadwal->user->nama_lengkap ?? 'Dihapus' }}</div>

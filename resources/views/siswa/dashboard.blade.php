@@ -259,7 +259,8 @@
                                     <div>
                                         <span class="badge bg-light text-primary border rounded-pill mb-2">Sesi Ke-{{ $mySchedules->count() - $index }}</span>
                                         <h6 class="fw-bold mb-0 text-dark">{{ date('d M Y', strtotime($js->tanggal)) }}</h6>
-                                        <small class="text-muted">{{ $js->jam_mulai }} WIB</small>
+                                        <!-- 🔥 Penambahan format jam selesai -->
+                                        <small class="text-muted">{{ date('H:i', strtotime($js->jam_mulai)) }} - {{ date('H:i', strtotime($js->jam_mulai) + 3600) }} WIB</small>
                                     </div>
                                     <div>
                                         @if($js->status == 'Selesai') <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">Selesai</span>
