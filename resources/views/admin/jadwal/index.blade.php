@@ -117,7 +117,6 @@
                                 <div class="d-flex align-items-center">
                                     <div>
                                         <div class="fw-bold small"><i class="bi bi-calendar-event me-2 text-primary"></i>{{ date('d M Y', strtotime($j->tanggal)) }}</div>
-                                        <!-- 🔥 Penambahan format jam selesai -->
                                         <small class="text-muted"><i class="bi bi-clock me-2"></i>{{ date('H:i', strtotime($j->jam_mulai)) }} - {{ date('H:i', strtotime($j->jam_mulai) + 3600) }} WIB</small>
                                     </div>
                                     <button class="btn btn-link btn-sm ms-3 text-decoration-none fw-bold btn-ubah" data-bs-toggle="modal" data-bs-target="#modalReschedule{{ $j->id }}">
@@ -177,6 +176,10 @@
                 </div>
                 <form action="{{ url('/admin/jadwal') }}" method="POST" id="formTambahJadwal">
                     @csrf
+                    <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
+                    <input type="hidden" name="search_param" value="{{ request('search') }}">
+                    <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                    
                     <div class="modal-body p-4 text-start">
                         <div class="alert alert-light border border-success-subtle small mb-4 text-dark shadow-sm">
                             <i class="bi bi-info-circle-fill text-success me-2"></i> 
@@ -273,6 +276,10 @@
                     </div>
                     <form action="{{ url('/admin/jadwal/reschedule/'.$j->id) }}" method="POST">
                         @csrf @method('PUT')
+                        <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
+                        <input type="hidden" name="search_param" value="{{ request('search') }}">
+                        <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                        
                         <div class="modal-body p-4 text-start">
                             <p class="small text-muted mb-4">Atur ulang tanggal dan jam untuk siswa: <strong>{{ $j->user->nama_lengkap ?? 'Anonim' }}</strong></p>
                             <div class="mb-3">
@@ -292,7 +299,6 @@
                                     <option value="15:00" {{ $j->jam_mulai == '15:00' ? 'selected' : '' }}>15:00 - 16:00 WIB</option>
                                     <option value="16:00" {{ $j->jam_mulai == '16:00' ? 'selected' : '' }}>16:00 - 17:00 WIB</option>
                                     <option value="17:00" {{ $j->jam_mulai == '17:00' ? 'selected' : '' }}>17:00 - 18:00 WIB</option>
-                                    <!-- 🔥 REVISI: PENAMBAHAN OPSI 18:00 - 19:00 -->
                                     <option value="18:00" {{ $j->jam_mulai == '18:00' ? 'selected' : '' }}>18:00 - 19:00 WIB</option>
                                     <option value="19:00" {{ $j->jam_mulai == '19:00' ? 'selected' : '' }}>19:00 - 20:00 WIB</option>
                                 </select>
@@ -318,6 +324,10 @@
                     <!-- Tambah atribut identifier untuk JS -->
                     <form action="{{ url('/admin/jadwal/update-full/'.$j->id) }}" method="POST" class="form-update-jadwal" data-transmisi-siswa="{{ $j->user->package->transmisi ?? 'Manual' }}">
                         @csrf @method('PUT')
+                        <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
+                        <input type="hidden" name="search_param" value="{{ request('search') }}">
+                        <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                        
                         <div class="modal-body p-4 text-start">
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Status Jadwal</label>
