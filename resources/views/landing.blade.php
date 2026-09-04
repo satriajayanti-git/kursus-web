@@ -678,9 +678,10 @@
             <p class="mb-4 text-muted small" style="max-width: 500px; margin: 0 auto; line-height: 1.8;">Berkomitmen penuh membentuk pengemudi cerdas, berpengetahuan luas, dan bertanggung jawab.</p>
             
             <div class="d-flex justify-content-center gap-3 mb-4">
-                <a href="#" class="social-circle-btn btn-social-ig shadow-sm"><i class="bi bi-instagram fs-5"></i></a>
-                <a href="#" class="social-circle-btn btn-social-fb shadow-sm"><i class="bi bi-facebook fs-5"></i></a>
-                <a href="#" class="social-circle-btn btn-social-wa shadow-sm"><i class="bi bi-whatsapp fs-5"></i></a>
+                <!-- 🔥 PERUBAHAN: Link SOSMED & Target Tab Baru -->
+                <a href="https://www.instagram.com/satriajayanti_pondokbambu?igsi=N3cwc2N2Zm5oN2Q2" target="_blank" class="social-circle-btn btn-social-ig shadow-sm"><i class="bi bi-instagram fs-5"></i></a>
+                <a href="https://www.facebook.com/satria.jatibening" target="_blank" class="social-circle-btn btn-social-fb shadow-sm"><i class="bi bi-facebook fs-5"></i></a>
+                <a href="https://wa.me/6281990087770" target="_blank" class="social-circle-btn btn-social-wa shadow-sm"><i class="bi bi-whatsapp fs-5"></i></a>
             </div>
             <div class="pt-3 border-top border-light opacity-75">
                 <p class="small text-muted mb-0">&copy; {{ date('Y') }} {{ $setting->nama_website ?? 'Satria Jayanti' }}. All rights reserved.</p>
