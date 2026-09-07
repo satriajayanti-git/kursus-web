@@ -5,10 +5,18 @@
     <title>Manajemen Jadwal - CMS Satria Jayanti</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- 🔥 TAMBAHAN: Select2 CSS & Theme Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    
     <style>
         .table-custom { border-radius: 15px; overflow: hidden; border: none; }
         .monitor-box { background: #f8f9fa; border-left: 4px solid #198754; border-radius: 8px; padding: 15px; }
         .btn-ubah { font-size: 0.8rem; letter-spacing: 0.5px; }
+        
+        /* Tambahan styling agar font Select2 sesuai dengan template */
+        .select2-container--bootstrap-5 .select2-selection { font-size: 0.875rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); border-color: #dee2e6; }
     </style>
 </head>
 <body class="bg-light">
@@ -33,7 +41,6 @@
                         <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama siswa..." value="{{ request('search') ?? '' }}">
                     </div>
                     
-                    <!-- 🔥 REVISI: TAMBAHAN FILTER TANGGAL -->
                     <div class="input-group" style="max-width: 250px;">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-calendar-date text-muted"></i></span>
                         <input type="date" name="tanggal" class="form-control border-start-0 text-muted" value="{{ request('tanggal') ?? '' }}">
@@ -176,7 +183,6 @@
                 </div>
                 <form action="{{ url('/admin/jadwal') }}" method="POST" id="formTambahJadwal">
                     @csrf
-                    <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
                     <input type="hidden" name="search_param" value="{{ request('search') }}">
                     <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
                     
@@ -189,7 +195,8 @@
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Pilih Siswa (Sudah Lunas)</label>
-                                <select name="user_id" class="form-select shadow-sm" required>
+                                <!-- 🔥 REVISI: Class 'select2-siswa' ditambahkan di sini -->
+                                <select name="user_id" class="form-select select2-siswa" required>
                                     <option value="">-- Cari & Pilih Siswa --</option>
                                     @foreach($siswas as $siswa)
                                         <option value="{{ $siswa->id }}" data-transmisi="{{ $siswa->package->transmisi ?? 'Manual' }}">
@@ -276,7 +283,6 @@
                     </div>
                     <form action="{{ url('/admin/jadwal/reschedule/'.$j->id) }}" method="POST">
                         @csrf @method('PUT')
-                        <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
                         <input type="hidden" name="search_param" value="{{ request('search') }}">
                         <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
                         
@@ -321,10 +327,8 @@
                         <h5 class="modal-title fw-bold"><i class="bi bi-diagram-2 me-2"></i>Plotting Sesi Latihan & Unit</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <!-- Tambah atribut identifier untuk JS -->
                     <form action="{{ url('/admin/jadwal/update-full/'.$j->id) }}" method="POST" class="form-update-jadwal" data-transmisi-siswa="{{ $j->user->package->transmisi ?? 'Manual' }}">
                         @csrf @method('PUT')
-                        <!-- 🔥 REVISI: Hidden input untuk mempertahankan filter -->
                         <input type="hidden" name="search_param" value="{{ request('search') }}">
                         <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
                         
@@ -433,8 +437,22 @@
             </div>
         </div>
     </div>
+    
+    <!-- 🔥 TAMBAHAN: jQuery & Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
+        $(document).ready(function() {
+            // 🔥 Inisialisasi Select2 pada dropdown siswa
+            $('.select2-siswa').select2({
+                theme: 'bootstrap-5', // Menyatu dengan desain Bootstrap
+                dropdownParent: $('#modalTambahJadwal'), // WAJIB agar search box bisa diklik di dalam modal
+                placeholder: '-- Ketik Nama / ID Siswa --',
+                width: '100%'
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             const instrukturData = @json($instructors);
 
@@ -471,7 +489,7 @@
                 evaluateInstructor();
             });
 
-            // 🔥 LOGIC JS INTERCEPTOR UNTUK CEK SILANG TRANSMISI
+            // LOGIC JS INTERCEPTOR UNTUK CEK SILANG TRANSMISI
             let formToSubmit = null;
 
             function checkPindahMatic(e, form, transmisiSiswa) {
