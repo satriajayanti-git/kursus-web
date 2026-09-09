@@ -5,9 +5,17 @@
     <title>Manajemen Keuangan - CMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- 🔥 TAMBAHAN: Select2 CSS & Theme Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    
     <style>
         .table-custom { border-radius: 15px; overflow: hidden; border: none; }
         .card-stat { border-radius: 15px; border: none; }
+        
+        /* Tambahan styling agar font Select2 sesuai dengan template */
+        .select2-container--bootstrap-5 .select2-selection { font-size: 0.875rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); border-color: #dee2e6; }
     </style>
 </head>
 <body class="bg-light">
@@ -256,7 +264,8 @@
                     <div class="modal-body p-4 text-start">
                         <div class="mb-3">
                             <label class="small fw-bold mb-1">Pilih Siswa</label>
-                            <select name="user_id" class="form-select shadow-sm" required>
+                            <!-- 🔥 REVISI: Class 'select2-siswa-keuangan' ditambahkan -->
+                            <select name="user_id" class="form-select select2-siswa-keuangan shadow-sm" required>
                                 <option value="">-- Cari Siswa --</option>
                                 @foreach($siswas as $s)
                                     <option value="{{ $s->id }}">{{ $s->nama_lengkap }} ({{ $s->username }})</option>
@@ -281,9 +290,22 @@
         </div>
     </div>
 
+    <!-- 🔥 TAMBAHAN: jQuery & Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        $(document).ready(function() {
+            // 🔥 Inisialisasi Select2 pada dropdown siswa di modal Tagihan
+            $('.select2-siswa-keuangan').select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $('#tambahTagihanModal'), // WAJIB agar search box bisa diklik di dalam modal
+                placeholder: '-- Ketik Nama / Username Siswa --',
+                width: '100%'
+            });
+        });
+
         function toggleAlasan(selectElement, targetDivId) {
             const targetDiv = document.getElementById(targetDivId);
             const textArea = targetDiv.querySelector('textarea');
