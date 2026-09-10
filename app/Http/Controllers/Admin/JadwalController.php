@@ -81,7 +81,6 @@ class JadwalController extends Controller
 
     public function store(Request $request)
     {
-        // 🔥 REVISI: instructor_id & unit_id dirubah menjadi nullable (tidak wajib diisi)
         $request->validate([
             'user_id'       => 'required|exists:users,id',
             'tanggal'       => 'required|date',
@@ -114,15 +113,12 @@ class JadwalController extends Controller
             return back()->with('error', 'SISTEM MENOLAK: Siswa tersebut sudah memiliki jadwal di hari dan jam yang sama.');
         }
 
-        // 🔥 REVISI: Default Setup Draft
         $status_jadwal = 'Pending';
         $is_pindah_matic = false;
         $instructor_id = null;
         $unit_id = null;
 
-        // 🔥 REVISI: Pengkondisian Draft vs Aktif 
         if ($request->filled('instructor_id') && $request->filled('unit_id')) {
-            // Jika KEDUANYA diisi, jadikan status aktif (Disetujui) dan jalankan validasi operasionalnya
             $status_jadwal = 'Disetujui';
             $instructor = User::findOrFail($request->instructor_id);
             $unit = Unit::findOrFail($request->unit_id);
@@ -210,8 +206,8 @@ class JadwalController extends Controller
         // 10. Eksekusi Simpan Jadwal
         Jadwal::create([
             'user_id'                 => $siswa->id,
-            'instructor_id'           => $instructor_id, // Tergantung status apakah Draft atau Aktif
-            'unit_id'                 => $unit_id,       // Tergantung status apakah Draft atau Aktif
+            'instructor_id'           => $instructor_id,
+            'unit_id'                 => $unit_id,
             'branch_id'               => Auth::user()->branch_id,
             'tanggal'                 => $request->tanggal,
             'jam_mulai'               => $request->jam_mulai,
@@ -220,7 +216,6 @@ class JadwalController extends Controller
             'status_pembayaran_extra' => $status_pembayaran_extra
         ]);
 
-        // 🔥 REVISI: Modifikasi Pesan Berdasarkan Status Plotting / Draft
         if ($status_jadwal == 'Pending') {
             $pesan = 'Data Latihan siswa ini akan tersimpan sebagai draft.';
             if ($is_extra) {
@@ -241,7 +236,6 @@ class JadwalController extends Controller
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
         
-        // Arahkan ke tab Draft (Pending) jika statusnya draft
         $redirectStatus = $status_jadwal == 'Pending' ? 'Pending' : 'Disetujui';
 
         return redirect('/admin/jadwal?status=' . $redirectStatus . $qSearch . $qTanggal)->with('success', $pesan);
@@ -268,7 +262,8 @@ class JadwalController extends Controller
         $instructor_id = $request->instructor_id;
         $unit_id = $request->unit_id; 
 
-        if ($statusUpdate == 'Pending') {
+        // 🔥 REVISI: Kosongkan instruktur dan unit jika status Pending ATAU Batal
+        if ($statusUpdate == 'Pending' || $statusUpdate == 'Batal') {
             $instructor_id = null;
             $unit_id = null;
         }
@@ -284,6 +279,7 @@ class JadwalController extends Controller
                 }
             }
 
+            // Validasi backup dari backend jika instruktur/unit tidak dipilih untuk status aktif
             if (!$instructor_id) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
                 return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'Gagal Plotting! Silahkan pilih instruktur bertugas terlebih dahulu.');

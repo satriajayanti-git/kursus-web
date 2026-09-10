@@ -206,7 +206,6 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Tanggal Latihan</label>
-                                <!-- 🔥 REVISI: Min attribute dihapus agar bisa backdate -->
                                 <input type="date" name="tanggal" class="form-control shadow-sm" required>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -230,7 +229,6 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Tugaskan Instruktur</label>
-                                <!-- 🔥 REVISI: Atribut required dihapus -->
                                 <select name="instructor_id" id="instructor_id_new" class="form-select shadow-sm instructor-select" data-jadwal-id="new">
                                     <option value="">-- Pilih Instruktur (Opsional) --</option>
                                     @foreach($instructors as $ins)
@@ -241,7 +239,6 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
-                                <!-- 🔥 REVISI: Atribut required dihapus -->
                                 <select name="unit_id" id="unit_id_new" class="form-select shadow-sm unit-select">
                                     <option value="">-- Pilih Unit Kendaraan (Opsional) --</option>
                                     <optgroup label="🟢 TRANSMISI MATIC" style="background: #e0f8e9;">
@@ -346,8 +343,9 @@
 
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Instruktur</label>
-                                <select name="instructor_id" id="instructor_id_{{ $j->id }}" class="form-select shadow-sm instructor-select" data-jadwal-id="{{ $j->id }}" required>
-                                    <option value="">-- Tugaskan Instruktur --</option>
+                                <!-- 🔥 REVISI: Atribut required dihapus agar form tidak terblokir jika Dibatalkan -->
+                                <select name="instructor_id" id="instructor_id_{{ $j->id }}" class="form-select shadow-sm instructor-select" data-jadwal-id="{{ $j->id }}">
+                                    <option value="">-- Pilih Instruktur (Opsional jika Batal/Draft) --</option>
                                     @foreach($instructors as $ins)
                                         @php $transmisiPaket = $j->user->package->transmisi ?? 'Manual'; @endphp
                                         
@@ -375,8 +373,9 @@
 
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
-                                <select name="unit_id" id="unit_id_{{ $j->id }}" class="form-select shadow-sm unit-select" required>
-                                    <option value="">-- Pilih Unit Kendaraan --</option>
+                                <!-- 🔥 REVISI: Atribut required dihapus agar form tidak terblokir jika Dibatalkan -->
+                                <select name="unit_id" id="unit_id_{{ $j->id }}" class="form-select shadow-sm unit-select">
+                                    <option value="">-- Pilih Unit Kendaraan (Opsional jika Batal/Draft) --</option>
                                     <optgroup label="🟢 TRANSMISI MATIC" style="background: #e0f8e9;">
                                         @foreach($units->where('transmisi', 'Matic') as $u)
                                             <option value="{{ $u->id }}" data-transmisi="Matic" {{ $j->unit_id == $u->id ? 'selected' : '' }}>🚗 {{ $u->nopol ?? $u->nama_mobil }} - Matic ({{ $u->status_kepemilikan }})</option>
