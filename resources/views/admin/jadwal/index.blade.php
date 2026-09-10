@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
-    <!-- 🔥 TAMBAHAN: Select2 CSS & Theme Bootstrap 5 -->
+    <!-- Select2 CSS & Theme Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     
@@ -15,7 +15,6 @@
         .monitor-box { background: #f8f9fa; border-left: 4px solid #198754; border-radius: 8px; padding: 15px; }
         .btn-ubah { font-size: 0.8rem; letter-spacing: 0.5px; }
         
-        /* Tambahan styling agar font Select2 sesuai dengan template */
         .select2-container--bootstrap-5 .select2-selection { font-size: 0.875rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); border-color: #dee2e6; }
     </style>
 </head>
@@ -189,13 +188,12 @@
                     <div class="modal-body p-4 text-start">
                         <div class="alert alert-light border border-success-subtle small mb-4 text-dark shadow-sm">
                             <i class="bi bi-info-circle-fill text-success me-2"></i> 
-                            Sistem mendeteksi <strong>pindah transmisi otomatis</strong> dan akan memberikan tagihan / peringatan sesuai kebijakan.
+                            Kosongkan <strong>Instruktur</strong> dan <strong>Unit</strong> jika hanya ingin menyimpan jadwal ini sebagai <strong>Draft</strong>.
                         </div>
 
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Pilih Siswa (Sudah Lunas)</label>
-                                <!-- 🔥 REVISI: Class 'select2-siswa' ditambahkan di sini -->
                                 <select name="user_id" class="form-select select2-siswa" required>
                                     <option value="">-- Cari & Pilih Siswa --</option>
                                     @foreach($siswas as $siswa)
@@ -208,7 +206,8 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Tanggal Latihan</label>
-                                <input type="date" name="tanggal" class="form-control shadow-sm" min="{{ date('Y-m-d') }}" required>
+                                <!-- 🔥 REVISI: Min attribute dihapus agar bisa backdate -->
+                                <input type="date" name="tanggal" class="form-control shadow-sm" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Jam Latihan (1 Jam)</label>
@@ -231,8 +230,9 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Tugaskan Instruktur</label>
-                                <select name="instructor_id" id="instructor_id_new" class="form-select shadow-sm instructor-select" data-jadwal-id="new" required>
-                                    <option value="">-- Pilih Instruktur --</option>
+                                <!-- 🔥 REVISI: Atribut required dihapus -->
+                                <select name="instructor_id" id="instructor_id_new" class="form-select shadow-sm instructor-select" data-jadwal-id="new">
+                                    <option value="">-- Pilih Instruktur (Opsional) --</option>
                                     @foreach($instructors as $ins)
                                         <option value="{{ $ins->id }}">✅ {{ $ins->nama_lengkap }} ({{ $ins->tipe_instruktur ?? 'Tetap' }} - {{ $ins->kategori_transmisi }})</option>
                                     @endforeach
@@ -241,8 +241,9 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
-                                <select name="unit_id" id="unit_id_new" class="form-select shadow-sm unit-select" required>
-                                    <option value="">-- Pilih Unit Kendaraan --</option>
+                                <!-- 🔥 REVISI: Atribut required dihapus -->
+                                <select name="unit_id" id="unit_id_new" class="form-select shadow-sm unit-select">
+                                    <option value="">-- Pilih Unit Kendaraan (Opsional) --</option>
                                     <optgroup label="🟢 TRANSMISI MATIC" style="background: #e0f8e9;">
                                         @foreach($units->where('transmisi', 'Matic') as $u)
                                             <option value="{{ $u->id }}" data-transmisi="Matic">🚗 {{ $u->nopol ?? $u->nama_mobil }} - Matic ({{ $u->status_kepemilikan }})</option>
@@ -438,16 +439,14 @@
         </div>
     </div>
     
-    <!-- 🔥 TAMBAHAN: jQuery & Select2 JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            // 🔥 Inisialisasi Select2 pada dropdown siswa
             $('.select2-siswa').select2({
-                theme: 'bootstrap-5', // Menyatu dengan desain Bootstrap
-                dropdownParent: $('#modalTambahJadwal'), // WAJIB agar search box bisa diklik di dalam modal
+                theme: 'bootstrap-5',
+                dropdownParent: $('#modalTambahJadwal'),
                 placeholder: '-- Ketik Nama / ID Siswa --',
                 width: '100%'
             });

@@ -52,7 +52,6 @@ class JadwalController extends Controller
             });
         }
 
-        // 🔥 REVISI: LOGIC FILTER TANGGAL LATIHAN
         if ($request->filled('tanggal')) {
             $query->where('tanggal', $request->tanggal);
         }
@@ -82,17 +81,16 @@ class JadwalController extends Controller
 
     public function store(Request $request)
     {
+        // 🔥 REVISI: instructor_id & unit_id dirubah menjadi nullable (tidak wajib diisi)
         $request->validate([
             'user_id'       => 'required|exists:users,id',
             'tanggal'       => 'required|date',
             'jam_mulai'     => 'required',
-            'instructor_id' => 'required|exists:users,id',
-            'unit_id'       => 'required|exists:units,id',
+            'instructor_id' => 'nullable|exists:users,id',
+            'unit_id'       => 'nullable|exists:units,id',
         ]);
 
         $siswa = User::with('package')->findOrFail($request->user_id);
-        $instructor = User::findOrFail($request->instructor_id);
-        $unit = Unit::findOrFail($request->unit_id);
 
         // 1. Cek Kuota Sesi
         $maxSesi = $siswa->package->pertemuan ?? 0;
@@ -106,29 +104,7 @@ class JadwalController extends Controller
             return back()->with('error', 'SISTEM MENOLAK: Kuota pertemuan siswa ini sudah habis (' . $sesiTerpakai . '/' . $maxSesi . ').');
         }
 
-        // 2. Cek Validasi Transmisi (MUTLAK: Instruktur vs Unit Mobil)
-        $transmisiSiswa = $siswa->package->transmisi ?? 'Manual';
-        $transmisiUnit = $unit->transmisi;
-        $transmisiInstruktur = $instructor->kategori_transmisi;
-
-        if ($transmisiUnit !== 'Manual & Matic') {
-            if ($transmisiInstruktur !== 'Manual & Matic' && $transmisiInstruktur !== $transmisiUnit) {
-                return back()->with('error', "SISTEM MENOLAK: Instruktur spesialis {$transmisiInstruktur} tidak bisa mengajar menggunakan mobil {$transmisiUnit}.");
-            }
-        }
-
-        // 3. Logic: Pindah Transmisi Siswa (Manual -> Matic Kena Charge)
-        $is_pindah_matic = false;
-        if ($transmisiSiswa === 'Manual' && $transmisiUnit === 'Matic') {
-            $is_pindah_matic = true;
-        }
-
-        // 4. Cek Cuti Instruktur
-        if ($instructor->isCuti($request->tanggal)) {
-            return back()->with('error', 'SISTEM MENOLAK: Instruktur sedang cuti/izin pada tanggal tersebut.');
-        }
-
-        // 5. Cek Bentrok Jadwal Siswa
+        // 2. Cek Bentrok Jadwal Siswa (Mutlak untuk semua kondisi, baik draft maupun aktif)
         $bentrokSiswa = Jadwal::where('user_id', $siswa->id)
             ->where('tanggal', $request->tanggal)
             ->where('jam_mulai', $request->jam_mulai)
@@ -138,24 +114,65 @@ class JadwalController extends Controller
             return back()->with('error', 'SISTEM MENOLAK: Siswa tersebut sudah memiliki jadwal di hari dan jam yang sama.');
         }
 
-        // 6. Cek Bentrok Instruktur
-        $bentrokInstruktur = Jadwal::where('instructor_id', $instructor->id)
-            ->where('tanggal', $request->tanggal)
-            ->where('jam_mulai', $request->jam_mulai)
-            ->whereIn('status', ['Pending', 'Disetujui'])
-            ->exists();
-        if ($bentrokInstruktur) {
-            return back()->with('error', 'SISTEM MENOLAK: Instruktur sudah memiliki jadwal mengajar di jam tersebut.');
-        }
+        // 🔥 REVISI: Default Setup Draft
+        $status_jadwal = 'Pending';
+        $is_pindah_matic = false;
+        $instructor_id = null;
+        $unit_id = null;
 
-        // 7. Cek Bentrok Unit Armada
-        $bentrokUnit = Jadwal::where('unit_id', $unit->id)
-            ->where('tanggal', $request->tanggal)
-            ->where('jam_mulai', $request->jam_mulai)
-            ->whereIn('status', ['Pending', 'Disetujui'])
-            ->exists();
-        if ($bentrokUnit) {
-            return back()->with('error', 'SISTEM MENOLAK: Unit kendaraan ini sudah di-booking pada jam tersebut.');
+        // 🔥 REVISI: Pengkondisian Draft vs Aktif 
+        if ($request->filled('instructor_id') && $request->filled('unit_id')) {
+            // Jika KEDUANYA diisi, jadikan status aktif (Disetujui) dan jalankan validasi operasionalnya
+            $status_jadwal = 'Disetujui';
+            $instructor = User::findOrFail($request->instructor_id);
+            $unit = Unit::findOrFail($request->unit_id);
+            
+            $instructor_id = $instructor->id;
+            $unit_id = $unit->id;
+
+            // 3. Cek Validasi Transmisi (MUTLAK: Instruktur vs Unit Mobil)
+            $transmisiSiswa = $siswa->package->transmisi ?? 'Manual';
+            $transmisiUnit = $unit->transmisi;
+            $transmisiInstruktur = $instructor->kategori_transmisi;
+
+            if ($transmisiUnit !== 'Manual & Matic') {
+                if ($transmisiInstruktur !== 'Manual & Matic' && $transmisiInstruktur !== $transmisiUnit) {
+                    return back()->with('error', "SISTEM MENOLAK: Instruktur spesialis {$transmisiInstruktur} tidak bisa mengajar menggunakan mobil {$transmisiUnit}.");
+                }
+            }
+
+            // 4. Logic: Pindah Transmisi Siswa (Manual -> Matic Kena Charge)
+            if ($transmisiSiswa === 'Manual' && $transmisiUnit === 'Matic') {
+                $is_pindah_matic = true;
+            }
+
+            // 5. Cek Cuti Instruktur
+            if ($instructor->isCuti($request->tanggal)) {
+                return back()->with('error', 'SISTEM MENOLAK: Instruktur sedang cuti/izin pada tanggal tersebut.');
+            }
+
+            // 6. Cek Bentrok Instruktur
+            $bentrokInstruktur = Jadwal::where('instructor_id', $instructor->id)
+                ->where('tanggal', $request->tanggal)
+                ->where('jam_mulai', $request->jam_mulai)
+                ->whereIn('status', ['Pending', 'Disetujui'])
+                ->exists();
+            if ($bentrokInstruktur) {
+                return back()->with('error', 'SISTEM MENOLAK: Instruktur sudah memiliki jadwal mengajar di jam tersebut.');
+            }
+
+            // 7. Cek Bentrok Unit Armada
+            $bentrokUnit = Jadwal::where('unit_id', $unit->id)
+                ->where('tanggal', $request->tanggal)
+                ->where('jam_mulai', $request->jam_mulai)
+                ->whereIn('status', ['Pending', 'Disetujui'])
+                ->exists();
+            if ($bentrokUnit) {
+                return back()->with('error', 'SISTEM MENOLAK: Unit kendaraan ini sudah di-booking pada jam tersebut.');
+            }
+        } elseif ($request->filled('instructor_id') || $request->filled('unit_id')) {
+            // Jika salah satu diisi tapi yang lainnya kosong (Mencegah eror integritas)
+            return back()->with('error', 'SISTEM MENOLAK: Untuk melakukan plotting aktif, Instruktur dan Unit Kendaraan harus dipilih keduanya. Jika ingin menyimpan sebagai Draft, pastikan kedua kolom tersebut dikosongkan.');
         }
 
         // 8. Cek Extra Charge Lembut (Jam >= 16:00 Reguler)
@@ -178,7 +195,7 @@ class JadwalController extends Controller
             ]);
         }
 
-        // 9. Generate Invoice Pindah Matic (Jika Berlaku)
+        // 9. Generate Invoice Pindah Matic (Jika Berlaku & Valid)
         if ($is_pindah_matic) {
             Pembayaran::create([
                 'user_id'       => $siswa->id,
@@ -193,37 +210,47 @@ class JadwalController extends Controller
         // 10. Eksekusi Simpan Jadwal
         Jadwal::create([
             'user_id'                 => $siswa->id,
-            'instructor_id'           => $instructor->id,
-            'unit_id'                 => $unit->id,
+            'instructor_id'           => $instructor_id, // Tergantung status apakah Draft atau Aktif
+            'unit_id'                 => $unit_id,       // Tergantung status apakah Draft atau Aktif
             'branch_id'               => Auth::user()->branch_id,
             'tanggal'                 => $request->tanggal,
             'jam_mulai'               => $request->jam_mulai,
-            'status'                  => 'Disetujui',
+            'status'                  => $status_jadwal,
             'is_extra_charge'         => $is_extra,
             'status_pembayaran_extra' => $status_pembayaran_extra
         ]);
 
-        $pesan = 'Jadwal siswa berhasil di-plotting!';
-        if ($is_extra && $is_pindah_matic) {
-            $pesan = 'Jadwal di-plotting! Tagihan lembur (Rp 20.000) & charge pindah Matic (Rp 20.000) otomatis diterbitkan.';
-        } elseif ($is_extra) {
-            $pesan = 'Jadwal di-plotting! Tagihan lembur Rp 20.000 otomatis diterbitkan.';
-        } elseif ($is_pindah_matic) {
-            $pesan = 'Jadwal di-plotting! Tagihan charge pindah ke Matic Rp 20.000 otomatis diterbitkan.';
+        // 🔥 REVISI: Modifikasi Pesan Berdasarkan Status Plotting / Draft
+        if ($status_jadwal == 'Pending') {
+            $pesan = 'Data Latihan siswa ini akan tersimpan sebagai draft.';
+            if ($is_extra) {
+                $pesan .= ' Tagihan jam non-reguler (Rp 20.000) otomatis diterbitkan.';
+            }
+        } else {
+            $pesan = 'Jadwal siswa berhasil di-plotting secara aktif!';
+            if ($is_extra && $is_pindah_matic) {
+                $pesan = 'Jadwal di-plotting! Tagihan lembur (Rp 20.000) & charge pindah Matic (Rp 20.000) otomatis diterbitkan.';
+            } elseif ($is_extra) {
+                $pesan = 'Jadwal di-plotting! Tagihan lembur Rp 20.000 otomatis diterbitkan.';
+            } elseif ($is_pindah_matic) {
+                $pesan = 'Jadwal di-plotting! Tagihan charge pindah ke Matic Rp 20.000 otomatis diterbitkan.';
+            }
         }
 
-        // 🔥 REVISI: Menyematkan kembali filter
+        // Menyematkan kembali filter
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
+        
+        // Arahkan ke tab Draft (Pending) jika statusnya draft
+        $redirectStatus = $status_jadwal == 'Pending' ? 'Pending' : 'Disetujui';
 
-        return redirect('/admin/jadwal?status=Disetujui' . $qSearch . $qTanggal)->with('success', $pesan);
+        return redirect('/admin/jadwal?status=' . $redirectStatus . $qSearch . $qTanggal)->with('success', $pesan);
     }
 
     public function updateFull(Request $request, $id)
     {
         $jadwal = Jadwal::with('user.package')->findOrFail($id);
         
-        // 🔥 REVISI: Menangkap filter untuk dimasukkan ke redirect
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
 
@@ -345,7 +372,6 @@ class JadwalController extends Controller
             $pesan_akhir .= ' Tagihan charge pindah ke Matic (Rp 20.000) otomatis diterbitkan ke siswa.';
         }
 
-        // 🔥 REVISI: Mengembalikan filter di URL
         return redirect('/admin/jadwal?status=' . $redirectTab . $qSearch . $qTanggal)->with('success', $pesan_akhir);
     }
 
@@ -358,7 +384,6 @@ class JadwalController extends Controller
 
         $jadwal = Jadwal::findOrFail($id);
         
-        // 🔥 REVISI: Menangkap filter
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
         
@@ -399,13 +424,12 @@ class JadwalController extends Controller
         return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('success', 'Waktu jadwal berhasil diubah.');
     }
 
-    public function destroy(Request $request, $id) // Tambahkan (Request $request) agar filter tidak hilang
+    public function destroy(Request $request, $id) 
     {
         $jadwal = Jadwal::findOrFail($id);
         $currentStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
         $jadwal->delete();
         
-        // 🔥 REVISI: Menangkap filter
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
 
