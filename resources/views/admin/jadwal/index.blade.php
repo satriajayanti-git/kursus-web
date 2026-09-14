@@ -60,11 +60,11 @@
                     <span class="text-muted small fw-bold me-2 align-self-center"><i class="bi bi-funnel-fill me-1"></i> Filter Transmisi:</span>
                     <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal') . '&transmisi=Manual') }}" 
                        class="btn btn-sm {{ request('transmisi') == 'Manual' ? 'btn-dark' : 'btn-outline-dark' }} rounded-pill px-3 fw-bold shadow-sm">
-                       🚗 Jadwal Siswa Manual
+                        Jadwal Siswa Manual
                     </a>
                     <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal') . '&transmisi=Matic') }}" 
                        class="btn btn-sm {{ request('transmisi') == 'Matic' ? 'btn-primary' : 'btn-outline-primary' }} rounded-pill px-3 fw-bold shadow-sm">
-                       🚙 Jadwal Siswa Matic
+                        Jadwal Siswa Matic
                     </a>
                     @if(request('transmisi'))
                         <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal')) }}" 
