@@ -11,7 +11,6 @@
         body { background-color: var(--sj-bg); font-family: 'Segoe UI', sans-serif; }
         .card-custom { border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
         .table > :not(caption) > * > * { padding: 1rem 1rem; }
-        /* Style tambahan untuk kolom terkunci */
         .select-locked { background-color: #e9ecef !important; cursor: not-allowed !important; opacity: 1 !important; color: #6c757d; }
     </style>
 </head>
@@ -20,26 +19,39 @@
         @include('admin.sidebar')
         
         <div class="flex-grow-1 p-4" style="max-height: 100vh; overflow-y: auto;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
                     <h3 class="fw-bold m-0 text-dark">Kelola Data Siswa</h3>
                     <p class="text-muted m-0 small">Pantau semua siswa yang terdaftar di cabang Anda.</p>
                 </div>
-                <div class="d-flex gap-2 align-items-center">
-                    <span class="badge bg-primary px-4 py-2 fs-6 rounded-pill shadow-sm me-2">Total: {{ $students->count() }} Siswa</span>
-                    <button class="btn btn-success fw-bold rounded-pill shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#modalTambahSiswa">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-people me-1"></i> Aktif: {{ $totalAktif }}</span>
+                    <span class="badge bg-success px-3 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-check-circle me-1"></i> Selesai: {{ $totalSelesai }}</span>
+                    <span class="badge bg-dark px-3 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-diagram-3 me-1"></i> Keseluruhan: {{ $totalKeseluruhan }}</span>
+                    <button class="btn btn-success fw-bold rounded-pill shadow-sm px-4 py-2 ms-md-2" data-bs-toggle="modal" data-bs-target="#modalTambahSiswa">
                         <i class="bi bi-person-plus-fill me-2"></i>Daftar Siswa Offline
                     </button>
                 </div>
             </div>
 
             <div class="card border-0 shadow-sm mb-4 p-3 rounded-4">
-                <form action="{{ url('/admin/siswa') }}" method="GET" class="d-flex gap-2">
-                    <div class="input-group">
+                <form action="{{ url('/admin/siswa') }}" method="GET" class="d-flex flex-wrap flex-md-nowrap gap-2">
+                    <div class="input-group" style="flex: 1;">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama siswa atau ID (Cth: SJN072601)..." value="{{ $search ?? '' }}">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama atau ID (Cth: SJN072601)..." value="{{ $search ?? '' }}">
                     </div>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill shadow-sm">Cari</button>
+                    
+                    <div class="input-group" style="max-width: 250px;">
+                        <span class="input-group-text bg-white border-end-0" title="Filter Periode Daftar"><i class="bi bi-calendar-month text-muted"></i></span>
+                        <!-- Menggunakan input type month untuk mengambil YYYY-MM -->
+                        <input type="month" name="periode" class="form-control border-start-0" value="{{ $periode ?? '' }}">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill shadow-sm">Filter</button>
+                    
+                    @if(request('search') || request('periode'))
+                        <a href="{{ url('/admin/siswa') }}" class="btn btn-light border px-3 fw-bold rounded-pill shadow-sm" title="Reset Filter"><i class="bi bi-arrow-repeat"></i></a>
+                    @endif
                 </form>
             </div>
 
@@ -101,8 +113,11 @@
                                     </td>
 
                                     <td>
+                                        <!-- 🔥 LOGIC BADGE STATUS -->
                                         @if($s->status == 'Aktif')
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 rounded-pill">Aktif</span>
+                                        @elseif($s->status == 'Selesai Latihan')
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 rounded-pill"><i class="bi bi-check-all me-1"></i>Selesai Latihan</span>
                                         @else
                                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 rounded-pill">Non-Aktif</span>
                                         @endif
@@ -126,7 +141,7 @@
                                     </td>
                                 </tr>
 
-                                <!-- 🔥 MODAL EDIT SISWA -->
+                                <!-- 櫨 MODAL EDIT SISWA -->
                                 <div class="modal fade" id="modalEditSiswa{{ $s->id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-lg">
                                         <div class="modal-content border-0 rounded-4 shadow-lg">
@@ -144,13 +159,10 @@
                                                             <input type="text" name="nama_lengkap" class="form-control shadow-sm" value="{{ $s->nama_lengkap }}" required>
                                                         </div>
 
-                                                        <!-- 🔥 LOGIC BARU: MENGUNCI PILIHAN PAKET JIKA AKUN AKTIF -->
                                                         <div class="col-md-6 mb-3">
                                                             <label class="small fw-bold text-muted mb-1">Pilih Paket Kursus</label>
                                                             @if($s->status == 'Aktif')
-                                                                <!-- Form input disembunyikan agar nilai asli tetap terkirim saat disubmit -->
                                                                 <input type="hidden" name="id_package" value="{{ $s->id_package }}">
-                                                                <!-- Tampilan Dummy yang di-disable untuk indikator User Friendly -->
                                                                 <select class="form-select shadow-sm select-locked" disabled>
                                                                     @foreach(\App\Models\Package::all() as $pkg)
                                                                         <option value="{{ $pkg->id_package }}" {{ $s->id_package == $pkg->id_package ? 'selected' : '' }}>
@@ -194,9 +206,11 @@
                                                             <label class="small fw-bold text-muted mb-1">Status Akun</label>
                                                             <select name="status" class="form-select shadow-sm border-secondary">
                                                                 <option value="Aktif" {{ $s->status == 'Aktif' ? 'selected' : '' }}>Aktif</option>
+                                                                <!-- 🔥 Opsi Baru Ditambahkan -->
+                                                                <option value="Selesai Latihan" {{ $s->status == 'Selesai Latihan' ? 'selected' : '' }}>Selesai Latihan (Alumni)</option>
                                                                 <option value="Non-Aktif" {{ $s->status == 'Non-Aktif' ? 'selected' : '' }}>Non-Aktif</option>
                                                             </select>
-                                                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Ubah ke "Aktif" jika pembayaran telah dikonfirmasi manual.</small>
+                                                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Ubah ke "Selesai Latihan" jika seluruh sesi kuotanya telah habis digunakan.</small>
                                                         </div>
                                                         <div class="col-md-12 mb-2">
                                                             <label class="small fw-bold text-muted mb-1">Alamat Domisili</label>
@@ -216,7 +230,7 @@
                                 <tr>
                                     <td colspan="9" class="text-center py-5 text-muted">
                                         <div class="mb-2"><i class="bi bi-inbox fs-1"></i></div>
-                                        <p class="fst-italic m-0">Belum ada siswa yang mendaftar di cabang Anda.</p>
+                                        <p class="fst-italic m-0">Belum ada siswa yang mendaftar atau sesuai filter pencarian.</p>
                                     </td>
                                 </tr>
                                 @endforelse
@@ -228,7 +242,7 @@
         </div>
     </div>
 
-    <!-- 🔥 MODAL TAMBAH SISWA (WALK-IN) -->
+    <!-- 櫨 MODAL TAMBAH SISWA (WALK-IN) -->
     <div class="modal fade" id="modalTambahSiswa" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 rounded-4 shadow-lg">
@@ -244,14 +258,12 @@
                             Siswa yang didaftarkan melalui form ini akan otomatis mendapatkan <strong>Tagihan Baru</strong> di menu Keuangan. Status akun akan tetap <strong>Non-Aktif</strong> hingga Admin mengunggah bukti bayar dan melakukan konfirmasi Lunas.
                         </div>
 
-                        <!-- 🔥 GRID DISUSUN ULANG AGAR RAPI -->
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Nama Lengkap Siswa</label>
                                 <input type="text" name="nama_lengkap" class="form-control shadow-sm" required placeholder="Sesuai KTP">
                             </div>
 
-                            <!-- 🔥 TAMBAHAN FILTER KATEGORI -->
                             <div class="col-md-6 mb-3">
                                 <label class="small fw-bold text-muted mb-1">Kategori Paket</label>
                                 <select id="addKategoriSelect" class="form-select shadow-sm border-success" required>
@@ -307,7 +319,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Script Logic SweetAlert2 & JS Tambahan -->
     <script>
         @if(session('success'))
             Swal.fire({
@@ -369,32 +380,26 @@
             });
         }
 
-        // 🔥 LOGIC JAVASCRIPT: FILTER PAKET DINAMIS BERDASARKAN KATEGORI
         document.addEventListener('DOMContentLoaded', function () {
             const kategoriSelect = document.getElementById('addKategoriSelect');
             const paketSelect = document.getElementById('addPaketSelect');
             
             if (kategoriSelect && paketSelect) {
-                // Simpan semua opsi asli dari paketSelect ke dalam array
                 const paketOptions = Array.from(paketSelect.options).filter(opt => opt.value !== "");
 
                 kategoriSelect.addEventListener('change', function() {
                     const selectedKategori = this.value;
-                    
-                    // Bersihkan isi dropdown paket setiap kali kategori berubah
                     paketSelect.innerHTML = '<option value="">-- Pilih Paket & Transmisi --</option>';
                     
                     if (selectedKategori) {
-                        paketSelect.disabled = false; // Buka kunci dropdown
-                        
-                        // Loop array options, pasang kembali hanya yang cocok dengan kategori
+                        paketSelect.disabled = false; 
                         paketOptions.forEach(option => {
                             if (option.getAttribute('data-kategori') === selectedKategori) {
                                 paketSelect.appendChild(option.cloneNode(true));
                             }
                         });
                     } else {
-                        paketSelect.disabled = true; // Kunci kembali jika kosong
+                        paketSelect.disabled = true; 
                     }
                 });
             }
