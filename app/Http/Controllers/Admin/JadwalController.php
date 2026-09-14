@@ -56,6 +56,13 @@ class JadwalController extends Controller
             $query->where('tanggal', $request->tanggal);
         }
 
+        // 🔥 REVISI: Tambahan Logic Filter Berdasarkan Transmisi Siswa
+        if ($request->filled('transmisi')) {
+            $query->whereHas('user.package', function($q) use ($request) {
+                $q->where('transmisi', $request->transmisi);
+            });
+        }
+
         $jadwals = $query->orderBy('tanggal', 'desc')->orderBy('jam_mulai', 'asc')->get();
         
         $instructors = User::where('role', 'instruktur')
@@ -74,9 +81,10 @@ class JadwalController extends Controller
             ->get();
 
         $search = $request->search;
-        $tanggal = $request->tanggal; // Parameter filter agar di-lempar ke View
+        $tanggal = $request->tanggal; 
+        $transmisi = $request->transmisi; // Parameter transmisi untuk View
 
-        return view('admin.jadwal.index', compact('jadwals', 'instructors', 'units', 'siswas', 'status', 'search', 'tanggal'));
+        return view('admin.jadwal.index', compact('jadwals', 'instructors', 'units', 'siswas', 'status', 'search', 'tanggal', 'transmisi'));
     }
 
     public function store(Request $request)
@@ -91,7 +99,6 @@ class JadwalController extends Controller
 
         $siswa = User::with('package')->findOrFail($request->user_id);
 
-        // 1. Cek Kuota Sesi
         $maxSesi = $siswa->package->pertemuan ?? 0;
 
         if (strtolower($siswa->package->transmisi ?? '') == 'manual' && $maxSesi == 15) {
@@ -103,7 +110,6 @@ class JadwalController extends Controller
             return back()->with('error', 'SISTEM MENOLAK: Kuota pertemuan siswa ini sudah habis (' . $sesiTerpakai . '/' . $maxSesi . ').');
         }
 
-        // 2. Cek Bentrok Jadwal Siswa (Mutlak untuk semua kondisi, baik draft maupun aktif)
         $bentrokSiswa = Jadwal::where('user_id', $siswa->id)
             ->where('tanggal', $request->tanggal)
             ->where('jam_mulai', $request->jam_mulai)
@@ -126,7 +132,6 @@ class JadwalController extends Controller
             $instructor_id = $instructor->id;
             $unit_id = $unit->id;
 
-            // 3. Cek Validasi Transmisi (MUTLAK: Instruktur vs Unit Mobil)
             $transmisiSiswa = $siswa->package->transmisi ?? 'Manual';
             $transmisiUnit = $unit->transmisi;
             $transmisiInstruktur = $instructor->kategori_transmisi;
@@ -137,17 +142,14 @@ class JadwalController extends Controller
                 }
             }
 
-            // 4. Logic: Pindah Transmisi Siswa (Manual -> Matic Kena Charge)
             if ($transmisiSiswa === 'Manual' && $transmisiUnit === 'Matic') {
                 $is_pindah_matic = true;
             }
 
-            // 5. Cek Cuti Instruktur
             if ($instructor->isCuti($request->tanggal)) {
                 return back()->with('error', 'SISTEM MENOLAK: Instruktur sedang cuti/izin pada tanggal tersebut.');
             }
 
-            // 6. Cek Bentrok Instruktur
             $bentrokInstruktur = Jadwal::where('instructor_id', $instructor->id)
                 ->where('tanggal', $request->tanggal)
                 ->where('jam_mulai', $request->jam_mulai)
@@ -157,7 +159,6 @@ class JadwalController extends Controller
                 return back()->with('error', 'SISTEM MENOLAK: Instruktur sudah memiliki jadwal mengajar di jam tersebut.');
             }
 
-            // 7. Cek Bentrok Unit Armada
             $bentrokUnit = Jadwal::where('unit_id', $unit->id)
                 ->where('tanggal', $request->tanggal)
                 ->where('jam_mulai', $request->jam_mulai)
@@ -167,11 +168,9 @@ class JadwalController extends Controller
                 return back()->with('error', 'SISTEM MENOLAK: Unit kendaraan ini sudah di-booking pada jam tersebut.');
             }
         } elseif ($request->filled('instructor_id') || $request->filled('unit_id')) {
-            // Jika salah satu diisi tapi yang lainnya kosong (Mencegah eror integritas)
             return back()->with('error', 'SISTEM MENOLAK: Untuk melakukan plotting aktif, Instruktur dan Unit Kendaraan harus dipilih keduanya. Jika ingin menyimpan sebagai Draft, pastikan kedua kolom tersebut dikosongkan.');
         }
 
-        // 8. Cek Extra Charge Lembut (Jam >= 16:00 Reguler)
         $jamMulaiInt = (int) substr($request->jam_mulai, 0, 2);
         
         $is_extra = 0;
@@ -191,7 +190,6 @@ class JadwalController extends Controller
             ]);
         }
 
-        // 9. Generate Invoice Pindah Matic (Jika Berlaku & Valid)
         if ($is_pindah_matic) {
             Pembayaran::create([
                 'user_id'       => $siswa->id,
@@ -203,7 +201,6 @@ class JadwalController extends Controller
             ]);
         }
 
-        // 10. Eksekusi Simpan Jadwal
         Jadwal::create([
             'user_id'                 => $siswa->id,
             'instructor_id'           => $instructor_id,
@@ -232,21 +229,24 @@ class JadwalController extends Controller
             }
         }
 
-        // Menyematkan kembali filter
+        // 🔥 REVISI: Bawa parameter transmisi di URL redirect
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
+        $qTransmisi = $request->transmisi_param ? '&transmisi='.$request->transmisi_param : '';
         
         $redirectStatus = $status_jadwal == 'Pending' ? 'Pending' : 'Disetujui';
 
-        return redirect('/admin/jadwal?status=' . $redirectStatus . $qSearch . $qTanggal)->with('success', $pesan);
+        return redirect('/admin/jadwal?status=' . $redirectStatus . $qSearch . $qTanggal . $qTransmisi)->with('success', $pesan);
     }
 
     public function updateFull(Request $request, $id)
     {
         $jadwal = Jadwal::with('user.package')->findOrFail($id);
         
+        // 🔥 REVISI: Bawa parameter transmisi di URL redirect
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
+        $qTransmisi = $request->transmisi_param ? '&transmisi='.$request->transmisi_param : '';
 
         $request->validate([
             'instructor_id' => 'nullable|exists:users,id',
@@ -262,7 +262,6 @@ class JadwalController extends Controller
         $instructor_id = $request->instructor_id;
         $unit_id = $request->unit_id; 
 
-        // 🔥 REVISI: Kosongkan instruktur dan unit jika status Pending ATAU Batal
         if ($statusUpdate == 'Pending' || $statusUpdate == 'Batal') {
             $instructor_id = null;
             $unit_id = null;
@@ -275,19 +274,18 @@ class JadwalController extends Controller
             if ($statusUpdate == 'Disetujui' && $jadwal->is_extra_charge == 1) {
                 if ($jadwal->status_pembayaran_extra !== 'Lunas') {
                     $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                    return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'SISTEM TERKUNCI: Siswa belum melunasi biaya tambahan (Rp 20.000). Harap verifikasi pembayaran di menu Keuangan lebih dulu!');
+                    return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'SISTEM TERKUNCI: Siswa belum melunasi biaya tambahan (Rp 20.000). Harap verifikasi pembayaran di menu Keuangan lebih dulu!');
                 }
             }
 
-            // Validasi backup dari backend jika instruktur/unit tidak dipilih untuk status aktif
             if (!$instructor_id) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'Gagal Plotting! Silahkan pilih instruktur bertugas terlebih dahulu.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'Gagal Plotting! Silahkan pilih instruktur bertugas terlebih dahulu.');
             }
 
             if (!$unit_id) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'Gagal Plotting! Silahkan pilih Unit Kendaraan terlebih dahulu.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'Gagal Plotting! Silahkan pilih Unit Kendaraan terlebih dahulu.');
             }
 
             $instructor = User::findOrFail($instructor_id);
@@ -300,7 +298,7 @@ class JadwalController extends Controller
             if ($transmisiUnit !== 'Manual & Matic') {
                 if ($transmisiInstruktur !== 'Manual & Matic' && $transmisiInstruktur !== $transmisiUnit) {
                     $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                    return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', "SISTEM MENOLAK: Instruktur spesialis {$transmisiInstruktur} tidak bisa mengajar menggunakan mobil {$transmisiUnit}.");
+                    return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', "SISTEM MENOLAK: Instruktur spesialis {$transmisiInstruktur} tidak bisa mengajar menggunakan mobil {$transmisiUnit}.");
                 }
             }
 
@@ -316,12 +314,12 @@ class JadwalController extends Controller
 
             if ($instructor->isCuti($jadwal->tanggal)) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'Instruktur sedang cuti/izin pada tanggal tersebut.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'Instruktur sedang cuti/izin pada tanggal tersebut.');
             }
 
             if ($instructor->isSibuk($jadwal->tanggal, $jadwal->jam_mulai, $id)) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'Instruktur sudah memiliki jadwal lain di jam tersebut.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'Instruktur sudah memiliki jadwal lain di jam tersebut.');
             }
 
             $jadwalBentrokUnit = Jadwal::where('tanggal', $jadwal->tanggal)
@@ -333,7 +331,7 @@ class JadwalController extends Controller
 
             if($jadwalBentrokUnit) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'SISTEM MENOLAK: Unit kendaraan ini sudah di-booking untuk kegiatan operasional pada jam tersebut.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'SISTEM MENOLAK: Unit kendaraan ini sudah di-booking untuk kegiatan operasional pada jam tersebut.');
             }
         }
 
@@ -368,7 +366,7 @@ class JadwalController extends Controller
             $pesan_akhir .= ' Tagihan charge pindah ke Matic (Rp 20.000) otomatis diterbitkan ke siswa.';
         }
 
-        return redirect('/admin/jadwal?status=' . $redirectTab . $qSearch . $qTanggal)->with('success', $pesan_akhir);
+        return redirect('/admin/jadwal?status=' . $redirectTab . $qSearch . $qTanggal . $qTransmisi)->with('success', $pesan_akhir);
     }
 
     public function updateJadwal(Request $request, $id)
@@ -382,6 +380,7 @@ class JadwalController extends Controller
         
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
+        $qTransmisi = $request->transmisi_param ? '&transmisi='.$request->transmisi_param : '';
         
         if ($jadwal->instructor_id) {
             $bentrokJadwal = Jadwal::where('instructor_id', $jadwal->instructor_id)
@@ -393,7 +392,7 @@ class JadwalController extends Controller
 
             if ($bentrokJadwal) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'SISTEM MENOLAK: Reschedule Bentrok! Instruktur tersebut tidak bisa di jam baru ini.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'SISTEM MENOLAK: Reschedule Bentrok! Instruktur tersebut tidak bisa di jam baru ini.');
             }
         }
 
@@ -407,7 +406,7 @@ class JadwalController extends Controller
 
             if ($bentrokUnit) {
                 $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('error', 'SISTEM MENOLAK: Reschedule Bentrok! Mobil operasional sudah terpakai di jam baru ini.');
+                return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('error', 'SISTEM MENOLAK: Reschedule Bentrok! Mobil operasional sudah terpakai di jam baru ini.');
             }
         }
 
@@ -417,7 +416,7 @@ class JadwalController extends Controller
         ]);
 
         $oldStatus = $jadwal->status == 'Batal' ? 'Dibatalkan' : $jadwal->status;
-        return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal)->with('success', 'Waktu jadwal berhasil diubah.');
+        return redirect('/admin/jadwal?status='.$oldStatus . $qSearch . $qTanggal . $qTransmisi)->with('success', 'Waktu jadwal berhasil diubah.');
     }
 
     public function destroy(Request $request, $id) 
@@ -428,7 +427,8 @@ class JadwalController extends Controller
         
         $qSearch = $request->search_param ? '&search='.$request->search_param : '';
         $qTanggal = $request->tanggal_param ? '&tanggal='.$request->tanggal_param : '';
+        $qTransmisi = $request->transmisi_param ? '&transmisi='.$request->transmisi_param : '';
 
-        return redirect('/admin/jadwal?status='.$currentStatus . $qSearch . $qTanggal)->with('success', 'Jadwal berhasil dihapus.');
+        return redirect('/admin/jadwal?status='.$currentStatus . $qSearch . $qTanggal . $qTransmisi)->with('success', 'Jadwal berhasil dihapus.');
     }
 }

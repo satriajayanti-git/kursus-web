@@ -35,6 +35,9 @@
             <div class="card border-0 shadow-sm mb-4 p-3 rounded-4">
                 <form action="{{ url('/admin/jadwal') }}" method="GET" class="d-flex gap-2 align-items-center">
                     <input type="hidden" name="status" value="{{ $status ?? 'Pending' }}">
+                    <!-- 🔥 Parameter transmisi agar filter search & tanggal tidak meresetnya -->
+                    <input type="hidden" name="transmisi" value="{{ request('transmisi') }}">
+                    
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control border-start-0" placeholder="Ketik nama siswa..." value="{{ request('search') ?? '' }}">
@@ -48,9 +51,28 @@
                     <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill shadow-sm">Cari</button>
                     
                     @if(request('search') || request('tanggal'))
-                        <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending')) }}" class="btn btn-light border px-3 fw-bold rounded-pill shadow-sm" title="Reset Filter"><i class="bi bi-arrow-repeat"></i></a>
+                        <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . (request('transmisi') ? '&transmisi='.request('transmisi') : '')) }}" class="btn btn-light border px-3 fw-bold rounded-pill shadow-sm" title="Reset Filter"><i class="bi bi-arrow-repeat"></i></a>
                     @endif
                 </form>
+
+                <!-- 🔥 REVISI: Tombol Filter Transmisi Manual / Matic -->
+                <div class="d-flex gap-2 mt-3 border-top pt-3">
+                    <span class="text-muted small fw-bold me-2 align-self-center"><i class="bi bi-funnel-fill me-1"></i> Filter Transmisi:</span>
+                    <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal') . '&transmisi=Manual') }}" 
+                       class="btn btn-sm {{ request('transmisi') == 'Manual' ? 'btn-dark' : 'btn-outline-dark' }} rounded-pill px-3 fw-bold shadow-sm">
+                       🚗 Jadwal Siswa Manual
+                    </a>
+                    <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal') . '&transmisi=Matic') }}" 
+                       class="btn btn-sm {{ request('transmisi') == 'Matic' ? 'btn-primary' : 'btn-outline-primary' }} rounded-pill px-3 fw-bold shadow-sm">
+                       🚙 Jadwal Siswa Matic
+                    </a>
+                    @if(request('transmisi'))
+                        <a href="{{ url('/admin/jadwal?status=' . ($status ?? 'Pending') . '&search=' . request('search') . '&tanggal=' . request('tanggal')) }}" 
+                           class="btn btn-sm btn-light border rounded-pill px-3 text-muted shadow-sm" title="Tampilkan Semua Transmisi">
+                           <i class="bi bi-x-circle me-1"></i> Reset Transmisi
+                        </a>
+                    @endif
+                </div>
             </div>
 
             @if(session('success')) <div class="alert alert-success border-0 shadow-sm mb-4 fw-bold"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}</div> @endif
@@ -68,35 +90,36 @@
                 $status = $status ?? 'Pending'; 
                 $qSearch = request('search') ? '&search='.request('search') : '';
                 $qTanggal = request('tanggal') ? '&tanggal='.request('tanggal') : '';
+                $qTransmisi = request('transmisi') ? '&transmisi='.request('transmisi') : ''; // 🔥 REVISI Parameter
             @endphp
             <ul class="nav nav-pills mb-4 gap-2">
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Pending' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Pending' . $qSearch . $qTanggal) }}">
+                       href="{{ url('/admin/jadwal?status=Pending' . $qSearch . $qTanggal . $qTransmisi) }}">
                         <i class="bi bi-hourglass-split me-1"></i> Pending
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Disetujui' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Disetujui' . $qSearch . $qTanggal) }}">
+                       href="{{ url('/admin/jadwal?status=Disetujui' . $qSearch . $qTanggal . $qTransmisi) }}">
                         <i class="bi bi-calendar-check me-1"></i> Aktif / Berjalan
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Selesai' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Selesai' . $qSearch . $qTanggal) }}">
+                       href="{{ url('/admin/jadwal?status=Selesai' . $qSearch . $qTanggal . $qTransmisi) }}">
                         <i class="bi bi-check-all me-1"></i> Selesai Latihan
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {{ $status == 'Dibatalkan' ? 'active shadow-sm fw-bold' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=Dibatalkan' . $qSearch . $qTanggal) }}">
+                       href="{{ url('/admin/jadwal?status=Dibatalkan' . $qSearch . $qTanggal . $qTransmisi) }}">
                         <i class="bi bi-x-circle me-1"></i> Dibatalkan
                     </a>
                 </li>
                 <li class="nav-item ms-auto">
                     <a class="nav-link {{ $status == 'all' ? 'active shadow-sm fw-bold bg-dark text-white' : 'bg-white border text-muted' }} rounded-pill px-4" 
-                       href="{{ url('/admin/jadwal?status=all' . $qSearch . $qTanggal) }}">
+                       href="{{ url('/admin/jadwal?status=all' . $qSearch . $qTanggal . $qTransmisi) }}">
                         <i class="bi bi-collection me-1"></i> Semua Data
                     </a>
                 </li>
@@ -184,6 +207,7 @@
                     @csrf
                     <input type="hidden" name="search_param" value="{{ request('search') }}">
                     <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                    <input type="hidden" name="transmisi_param" value="{{ request('transmisi') }}"> <!-- 🔥 -->
                     
                     <div class="modal-body p-4 text-start">
                         <div class="alert alert-light border border-success-subtle small mb-4 text-dark shadow-sm">
@@ -283,6 +307,7 @@
                         @csrf @method('PUT')
                         <input type="hidden" name="search_param" value="{{ request('search') }}">
                         <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                        <input type="hidden" name="transmisi_param" value="{{ request('transmisi') }}"> <!-- 🔥 -->
                         
                         <div class="modal-body p-4 text-start">
                             <p class="small text-muted mb-4">Atur ulang tanggal dan jam untuk siswa: <strong>{{ $j->user->nama_lengkap ?? 'Anonim' }}</strong></p>
@@ -329,6 +354,7 @@
                         @csrf @method('PUT')
                         <input type="hidden" name="search_param" value="{{ request('search') }}">
                         <input type="hidden" name="tanggal_param" value="{{ request('tanggal') }}">
+                        <input type="hidden" name="transmisi_param" value="{{ request('transmisi') }}"> <!-- 🔥 -->
                         
                         <div class="modal-body p-4 text-start">
                             <div class="mb-3">
@@ -343,7 +369,6 @@
 
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Instruktur</label>
-                                <!-- 🔥 REVISI: Atribut required dihapus agar form tidak terblokir jika Dibatalkan -->
                                 <select name="instructor_id" id="instructor_id_{{ $j->id }}" class="form-select shadow-sm instructor-select" data-jadwal-id="{{ $j->id }}">
                                     <option value="">-- Pilih Instruktur (Opsional jika Batal/Draft) --</option>
                                     @foreach($instructors as $ins)
@@ -373,7 +398,6 @@
 
                             <div class="mb-3">
                                 <label class="fw-bold small mb-2 text-muted text-uppercase">Plot Unit Kendaraan</label>
-                                <!-- 🔥 REVISI: Atribut required dihapus agar form tidak terblokir jika Dibatalkan -->
                                 <select name="unit_id" id="unit_id_{{ $j->id }}" class="form-select shadow-sm unit-select">
                                     <option value="">-- Pilih Unit Kendaraan (Opsional jika Batal/Draft) --</option>
                                     <optgroup label="🟢 TRANSMISI MATIC" style="background: #e0f8e9;">
