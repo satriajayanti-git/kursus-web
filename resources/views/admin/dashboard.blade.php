@@ -5,6 +5,8 @@
     <title>Admin Dashboard - Satria Jayanti</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
         .card-custom { border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
@@ -36,11 +38,13 @@
             padding: 1.5rem;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             height: 100%;
+            transition: transform 0.2s ease-in-out;
         }
+        .stat-card:hover { transform: translateY(-5px); }
         .stat-card.blue { border-left: 5px solid #0d6efd; }
         .stat-card.green { border-left: 5px solid #20c997; }
         .stat-card.yellow { border-left: 5px solid #ffc107; }
-        .stat-card.cyan { border-left: 5px solid #0dcaf0; }
+        .stat-card.purple { border-left: 5px solid #6f42c1; }
 
         .stat-icon {
             width: 48px;
@@ -56,7 +60,7 @@
         .stat-icon.blue { background-color: #3b82f6; }
         .stat-icon.green { background-color: #22c55e; }
         .stat-icon.yellow { background-color: #eab308; }
-        .stat-icon.cyan { background-color: #06b6d4; }
+        .stat-icon.purple { background-color: #8b5cf6; }
 
         .stat-label {
             font-size: 0.75rem;
@@ -107,7 +111,18 @@
                 </div>
             </div>
 
-            <div class="row g-4 mb-2">
+            <div class="d-flex justify-content-end text-muted small fw-bold mb-3">
+                <i class="bi bi-calendar-event me-2"></i> {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y') }}
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 col-xl-3">
+                    <div class="stat-card purple">
+                        <div class="stat-icon purple"><i class="bi bi-diagram-3-fill"></i></div>
+                        <div class="stat-label">Total Keseluruhan</div>
+                        <h3 class="stat-value">{{ $siswaKeseluruhan ?? 0 }}</h3>
+                    </div>
+                </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="stat-card blue">
                         <div class="stat-icon blue"><i class="bi bi-people-fill"></i></div>
@@ -117,29 +132,28 @@
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="stat-card green">
-                        <div class="stat-icon green"><i class="bi bi-calendar-check-fill"></i></div>
-                        <div class="stat-label">Jadwal Hari Ini</div>
-                        <h3 class="stat-value">{{ $jadwalHariIni ?? 0 }}</h3>
+                        <div class="stat-icon green"><i class="bi bi-calendar2-check-fill"></i></div>
+                        <div class="stat-label">Siswa Bulan Ini</div>
+                        <h3 class="stat-value">{{ $siswaBulanIni ?? 0 }}</h3>
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="stat-card yellow">
-                        <div class="stat-icon yellow"><i class="bi bi-clock-history"></i></div>
-                        <div class="stat-label">Pendaftaran Baru</div>
-                        <h3 class="stat-value">{{ $pendaftaranBaru ?? 0 }}</h3>
-                    </div>
-                </div>
-                <div class="col-md-6 col-xl-3">
-                    <div class="stat-card cyan">
-                        <div class="stat-icon cyan"><i class="bi bi-person-badge-fill"></i></div>
-                        <div class="stat-label">Instruktur Tersedia</div>
-                        <h3 class="stat-value">{{ $instrukturTersedia ?? 0 }}</h3>
+                        <div class="stat-icon yellow"><i class="bi bi-person-lines-fill"></i></div>
+                        <div class="stat-label">Pendaftar Baru Hari Ini</div>
+                        <h3 class="stat-value">{{ $pendaftaranBaruHariIni ?? 0 }}</h3>
                     </div>
                 </div>
             </div>
-            
-            <div class="d-flex justify-content-end text-muted small fw-bold mb-4">
-                <i class="bi bi-calendar-event me-2"></i> {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y') }}
+
+            <!-- GRAFIK PENDAFTARAN -->
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold m-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Statistik Pendaftaran (6 Bulan Terakhir)</h5>
+                </div>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="siswaChart"></canvas>
+                </div>
             </div>
 
         </div>
@@ -156,7 +170,6 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 bg-light">
-                    
                     <div class="accordion" id="faqAdmin">
                         
                         <div class="accordion-item shadow-sm">
@@ -206,31 +219,12 @@
                         <div class="accordion-item shadow-sm">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                    <i class="bi bi-search text-info me-3 fs-5"></i> 4. Cara mencari jadwal secara cepat dan akurat?
+                                    <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i> 4. Apa itu status "Selesai Latihan"?
                                 </button>
                             </h2>
                             <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAdmin">
                                 <div class="accordion-body text-muted small lh-lg">
-                                    Di menu <strong>Jadwal</strong>, kami menyediakan fitur <em>Smart Search</em>. Anda cukup mengetikkan <strong>Nama Siswa</strong> ATAU <strong>Nama Instruktur</strong> di kolom pencarian lalu tekan Enter. Sistem akan mencari dan menyaring data dari ribuan jadwal dalam hitungan detik. Klik tombol "Reset" (X) untuk menampilkan semua jadwal kembali.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="accordion-item shadow-sm">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                    <i class="bi bi-globe text-primary me-3 fs-5"></i> 5. Mengubah Konten Landing Page (Logo, Paket, dll)?
-                                </button>
-                            </h2>
-                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAdmin">
-                                <div class="accordion-body text-muted small lh-lg">
-                                    Buka menu <strong>Pengaturan Konten Web</strong>. Di sini Anda memiliki akses penuh untuk:
-                                    <ul class="mb-0 mt-2">
-                                        <li>Mengubah teks Visi, Misi, dan Nomor Telepon.</li>
-                                        <li>Mengunggah Logo dan Foto Hero (Maks. 2MB, format JPG/PNG).</li>
-                                        <li>Menambah, Mengedit, dan Menghapus data Paket Kursus, Cabang Armada, serta Galeri Foto.</li>
-                                    </ul>
-                                    <em>Catatan: Semua perubahan akan otomatis dan langsung tayang (Real-time) di halaman depan website.</em>
+                                    Jika siswa sudah menyelesaikan seluruh pertemuan dan kuotanya habis, buka menu <strong>Siswa</strong> lalu edit akunnya. Ubah Status Akun menjadi <strong>"Selesai Latihan"</strong>. Ini akan memindahkan mereka dari hitungan "Siswa Aktif" tanpa menghapus rekam jejak mereka sebagai alumni (tetap dihitung di Total Keseluruhan).
                                 </div>
                             </div>
                         </div>
@@ -245,5 +239,48 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('siswaChart').getContext('2d');
+            const siswaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: @json($chartLabels),
+                    datasets: [{
+                        label: 'Pendaftar Baru',
+                        data: @json($chartData),
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0d6efd',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [5, 5], color: '#e2e8f0' },
+                            ticks: { precision: 0, color: '#64748b' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { weight: 'bold' } }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>

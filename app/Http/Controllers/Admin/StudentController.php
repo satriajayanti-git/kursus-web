@@ -24,7 +24,6 @@ class StudentController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            
             $query->where(function($q) use ($search) {
                 $q->where('nama_lengkap', 'like', '%' . $search . '%')
                   ->orWhere('username', 'like', '%' . $search . '%')
@@ -32,11 +31,26 @@ class StudentController extends Controller
             });
         }
 
-        // 🔥 REVISI: Mengembalikan 'desc' menjadi 'asc' agar siswa pendaftar terbaru berada di urutan paling bawah
-        $students = $query->orderBy('created_at', 'asc')->get();
-        $search = $request->search;
+        // 🔥 REVISI: Tambahan Filtering berdasarkan Periode Bulan
+        if ($request->filled('periode')) {
+            $periodeParts = explode('-', $request->periode); // Format YYYY-MM
+            if (count($periodeParts) == 2) {
+                $query->whereYear('created_at', $periodeParts[0])
+                      ->whereMonth('created_at', $periodeParts[1]);
+            }
+        }
 
-        return view('admin.siswa.index', compact('students', 'search'));
+        $students = $query->orderBy('created_at', 'asc')->get();
+        
+        // Perhitungan untuk ditampilkan di badge Atas (Dihitung berdasarkan filter aktif)
+        $totalAktif = $students->where('status', 'Aktif')->count();
+        $totalSelesai = $students->where('status', 'Selesai Latihan')->count();
+        $totalKeseluruhan = $totalAktif + $totalSelesai; 
+
+        $search = $request->search;
+        $periode = $request->periode;
+
+        return view('admin.siswa.index', compact('students', 'search', 'periode', 'totalAktif', 'totalSelesai', 'totalKeseluruhan'));
     }
 
     public function store(Request $request)
@@ -75,7 +89,6 @@ class StudentController extends Controller
 
         $id_siswa = $prefixId . str_pad($urutan, 2, '0', STR_PAD_LEFT);
 
-        // Buat Akun Siswa Baru & Kunci Nama Admin
         $siswa = User::create([
             'id_siswa'     => $id_siswa,
             'nama_lengkap' => $request->nama_lengkap,
@@ -88,7 +101,7 @@ class StudentController extends Controller
             'role'         => 'siswa',
             'branch_id'    => $admin->branch_id,
             'status'       => 'Non-Aktif',
-            'registered_by'=> $admin->id, // 🔥 Mengikat ID Admin yang mendaftarkan siswa ini secara permanen
+            'registered_by'=> $admin->id, 
         ]);
 
         $paket = Package::where('id_package', $request->id_package)->first();
@@ -123,7 +136,8 @@ class StudentController extends Controller
             'username'     => 'required|string|unique:users,username,' . $id,
             'email'        => 'required|email|unique:users,email,' . $id,
             'no_telp'      => 'required|string|max:20',
-            'status'       => 'required|in:Aktif,Non-Aktif',
+            // 🔥 REVISI: Validasi menerima "Selesai Latihan"
+            'status'       => 'required|in:Aktif,Non-Aktif,Selesai Latihan',
             'alamat'       => 'required|string',
             'password'     => 'nullable|string|min:6',
         ]);
