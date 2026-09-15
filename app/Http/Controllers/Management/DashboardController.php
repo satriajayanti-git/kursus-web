@@ -68,6 +68,22 @@ class DashboardController extends Controller
                 ->where('status', 'Lunas')
                 ->sum('total_tagihan');
 
+            // 🔥 LOGIC BARU: Data Pendaftaran Bulanan Per Cabang (Sesuai Filter Tahun)
+            $siswaBulanan = User::select(
+                DB::raw('MONTH(created_at) as bulan'),
+                DB::raw('COUNT(id) as total')
+            )
+            ->where('role', 'siswa')
+            ->where('branch_id', $branch->id)
+            ->whereYear('created_at', $tahun)
+            ->groupBy('bulan')
+            ->get();
+
+            $chartSiswaBulanan = array_fill(0, 12, 0);
+            foreach ($siswaBulanan as $data) {
+                $chartSiswaBulanan[$data->bulan - 1] = (int) $data->total;
+            }
+
             // Data Peminatan Transmisi per Cabang (Sesuai Filter Tahun)
             $transmisiManual = User::where('role', 'siswa')
                 ->where('branch_id', $branch->id)
@@ -85,13 +101,14 @@ class DashboardController extends Controller
 
             // Memasukkan semua rincian ke dalam array per cabang
             $branchStats[] = [
-                'nama'         => $branch->nama_cabang,
-                'siswa_year'   => $siswaYear,
-                'revenue_year' => $revenueYear,
-                'siswa_all'    => $siswaAllTime,
-                'revenue_all'  => $revenueAllTime,
-                'manual_count' => $transmisiManual,
-                'matic_count'  => $transmisiMatic
+                'nama'          => $branch->nama_cabang,
+                'siswa_year'    => $siswaYear,
+                'revenue_year'  => $revenueYear,
+                'siswa_all'     => $siswaAllTime,
+                'revenue_all'   => $revenueAllTime,
+                'siswa_bulanan' => $chartSiswaBulanan, // Array data pendaftar per bulan
+                'manual_count'  => $transmisiManual,
+                'matic_count'   => $transmisiMatic
             ];
         }
 
