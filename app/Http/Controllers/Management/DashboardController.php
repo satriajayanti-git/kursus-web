@@ -3,33 +3,36 @@
 namespace App\Http\Controllers\Management;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request; // Tambah Request
+use Illuminate\Http\Request; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash; // Tambah Hash untuk validasi password
+use Illuminate\Support\Facades\Hash; 
 use App\Models\{User, Branch, Pembayaran, Setting, Unit}; 
 use Carbon\Carbon; 
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $setting = Setting::first();
 
-        // Statistik Global (Tetap Original tanpa perubahan)
+        // Mengambil filter tahun, default adalah tahun ini berjalan
+        $tahun = $request->get('tahun', date('Y'));
+
+        // Statistik Global All-Time
         $totalCabang = Branch::count();
         $totalSiswa = User::where('role', 'siswa')->count();
         $totalInstruktur = User::where('role', 'instruktur')->count();
         $totalPendapatan = Pembayaran::where('status', 'Lunas')->sum('total_tagihan');
 
-        // LOGIC GRAFIK (Tetap Original tanpa perubahan)
+        // LOGIC GRAFIK PENDAPATAN BULANAN (Sesuai Tahun Filter)
         $pendapatanBulanan = Pembayaran::select(
             DB::raw('MONTH(updated_at) as bulan'),
             DB::raw('SUM(total_tagihan) as total')
         )
         ->where('status', 'Lunas')
-        ->whereYear('updated_at', date('Y'))
+        ->whereYear('updated_at', $tahun)
         ->groupBy('bulan')
         ->get();
 
@@ -40,7 +43,52 @@ class DashboardController extends Controller
             $chartPendapatan[$data->bulan - 1] = (int) $data->total;
         }
 
-        // 🔥 LOGIC REMINDER PAJAK & KIR (H-14)
+        // LOGIC STATISTIK & GRAFIK PER CABANG (Sesuai Tahun Filter)
+        $branches = Branch::all();
+        $branchStats = [];
+        
+        $transmisiLabels = [];
+        $transmisiManual = [];
+        $transmisiMatic = [];
+
+        foreach ($branches as $branch) {
+            // Jumlah Siswa mendaftar di tahun terkait
+            $siswaCount = User::where('role', 'siswa')
+                ->where('branch_id', $branch->id)
+                ->whereYear('created_at', $tahun)
+                ->count();
+
+            // Total Omzet cabang di tahun terkait
+            $revenue = Pembayaran::where('branch_id', $branch->id)
+                ->where('status', 'Lunas')
+                ->whereYear('updated_at', $tahun)
+                ->sum('total_tagihan');
+
+            $branchStats[] = [
+                'nama' => $branch->nama_cabang,
+                'siswa' => $siswaCount,
+                'revenue' => $revenue
+            ];
+
+            // Setup Data untuk Bar Chart Transmisi
+            $transmisiLabels[] = $branch->nama_cabang;
+
+            $transmisiManual[] = User::where('role', 'siswa')
+                ->where('branch_id', $branch->id)
+                ->whereYear('created_at', $tahun)
+                ->whereHas('package', function($q) {
+                    $q->where('transmisi', 'Manual');
+                })->count();
+
+            $transmisiMatic[] = User::where('role', 'siswa')
+                ->where('branch_id', $branch->id)
+                ->whereYear('created_at', $tahun)
+                ->whereHas('package', function($q) {
+                    $q->where('transmisi', 'Matic');
+                })->count();
+        }
+
+        // LOGIC REMINDER PAJAK & KIR (H-14)
         $warningDate = Carbon::now()->addDays(14);
         
         $pajakAlerts = Unit::whereNotNull('tgl_jatuh_tempo_pajak')
@@ -58,18 +106,17 @@ class DashboardController extends Controller
 
         return view('management.dashboard', compact(
             'user', 'setting', 'totalCabang', 'totalSiswa', 'totalInstruktur', 'totalPendapatan',
-            'chartBulan', 'chartPendapatan', 'reminders'
+            'chartBulan', 'chartPendapatan', 'reminders', 'tahun', 'branchStats', 
+            'transmisiLabels', 'transmisiManual', 'transmisiMatic'
         ));
     }
 
-    // 🔥 LOGIC BARU: Tampilkan halaman Ubah Password
     public function showPasswordForm()
     {
         $setting = Setting::first();
         return view('management.password', compact('setting'));
     }
 
-    // 🔥 LOGIC BARU: Proses Ubah Password
     public function updatePassword(Request $request)
     {
         $request->validate([
@@ -82,12 +129,10 @@ class DashboardController extends Controller
 
         $user = User::find(Auth::id());
 
-        // Cek kecocokan password lama
         if (!Hash::check($request->password_lama, $user->password)) {
             return back()->with('error', 'Password lama tidak sesuai!');
         }
 
-        // Update ke database
         $user->update([
             'password' => Hash::make($request->password_baru)
         ]);
