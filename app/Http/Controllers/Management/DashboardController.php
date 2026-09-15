@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $setting = Setting::first();
 
-        // Mengambil filter tahun, default adalah tahun ini berjalan
+        // Mengambil filter tahun, default adalah tahun berjalan
         $tahun = $request->get('tahun', date('Y'));
 
         // Statistik Global All-Time
@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $totalInstruktur = User::where('role', 'instruktur')->count();
         $totalPendapatan = Pembayaran::where('status', 'Lunas')->sum('total_tagihan');
 
-        // LOGIC GRAFIK PENDAPATAN BULANAN (Sesuai Tahun Filter)
+        // LOGIC GRAFIK PENDAPATAN BULANAN GLOBAL (Sesuai Tahun Filter)
         $pendapatanBulanan = Pembayaran::select(
             DB::raw('MONTH(updated_at) as bulan'),
             DB::raw('SUM(total_tagihan) as total')
@@ -43,49 +43,56 @@ class DashboardController extends Controller
             $chartPendapatan[$data->bulan - 1] = (int) $data->total;
         }
 
-        // LOGIC STATISTIK & GRAFIK PER CABANG (Sesuai Tahun Filter)
+        // LOGIC STATISTIK & GRAFIK DETAIL PER CABANG
         $branches = Branch::all();
         $branchStats = [];
-        
-        $transmisiLabels = [];
-        $transmisiManual = [];
-        $transmisiMatic = [];
 
         foreach ($branches as $branch) {
-            // Jumlah Siswa mendaftar di tahun terkait
-            $siswaCount = User::where('role', 'siswa')
+            // Data Tahunan (Sesuai Filter)
+            $siswaYear = User::where('role', 'siswa')
                 ->where('branch_id', $branch->id)
                 ->whereYear('created_at', $tahun)
                 ->count();
 
-            // Total Omzet cabang di tahun terkait
-            $revenue = Pembayaran::where('branch_id', $branch->id)
+            $revenueYear = Pembayaran::where('branch_id', $branch->id)
                 ->where('status', 'Lunas')
                 ->whereYear('updated_at', $tahun)
                 ->sum('total_tagihan');
 
-            $branchStats[] = [
-                'nama' => $branch->nama_cabang,
-                'siswa' => $siswaCount,
-                'revenue' => $revenue
-            ];
+            // Data Keseluruhan (All-Time)
+            $siswaAllTime = User::where('role', 'siswa')
+                ->where('branch_id', $branch->id)
+                ->count();
 
-            // Setup Data untuk Bar Chart Transmisi
-            $transmisiLabels[] = $branch->nama_cabang;
+            $revenueAllTime = Pembayaran::where('branch_id', $branch->id)
+                ->where('status', 'Lunas')
+                ->sum('total_tagihan');
 
-            $transmisiManual[] = User::where('role', 'siswa')
+            // Data Peminatan Transmisi per Cabang (Sesuai Filter Tahun)
+            $transmisiManual = User::where('role', 'siswa')
                 ->where('branch_id', $branch->id)
                 ->whereYear('created_at', $tahun)
                 ->whereHas('package', function($q) {
                     $q->where('transmisi', 'Manual');
                 })->count();
 
-            $transmisiMatic[] = User::where('role', 'siswa')
+            $transmisiMatic = User::where('role', 'siswa')
                 ->where('branch_id', $branch->id)
                 ->whereYear('created_at', $tahun)
                 ->whereHas('package', function($q) {
                     $q->where('transmisi', 'Matic');
                 })->count();
+
+            // Memasukkan semua rincian ke dalam array per cabang
+            $branchStats[] = [
+                'nama'         => $branch->nama_cabang,
+                'siswa_year'   => $siswaYear,
+                'revenue_year' => $revenueYear,
+                'siswa_all'    => $siswaAllTime,
+                'revenue_all'  => $revenueAllTime,
+                'manual_count' => $transmisiManual,
+                'matic_count'  => $transmisiMatic
+            ];
         }
 
         // LOGIC REMINDER PAJAK & KIR (H-14)
@@ -106,8 +113,7 @@ class DashboardController extends Controller
 
         return view('management.dashboard', compact(
             'user', 'setting', 'totalCabang', 'totalSiswa', 'totalInstruktur', 'totalPendapatan',
-            'chartBulan', 'chartPendapatan', 'reminders', 'tahun', 'branchStats', 
-            'transmisiLabels', 'transmisiManual', 'transmisiMatic'
+            'chartBulan', 'chartPendapatan', 'reminders', 'tahun', 'branchStats'
         ));
     }
 
@@ -124,7 +130,7 @@ class DashboardController extends Controller
             'password_baru' => 'required|min:6|confirmed', 
         ], [
             'password_baru.confirmed' => 'Konfirmasi password baru tidak cocok.',
-            'password_baru.min' => 'Password baru minimal 6 karakter.'
+            'password_baru.min'       => 'Password baru minimal 6 karakter.'
         ]);
 
         $user = User::find(Auth::id());

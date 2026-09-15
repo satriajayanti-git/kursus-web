@@ -27,6 +27,10 @@
         .card-stat:hover { transform: translateY(-5px); }
         .icon-shape { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
         
+        /* Interactive Branch Card */
+        .card-branch { cursor: pointer; transition: all 0.3s ease; border: 1px solid transparent; }
+        .card-branch:hover { border-color: var(--sj-primary); box-shadow: 0 15px 35px rgba(13, 110, 253, 0.1); transform: translateY(-5px); }
+        
         /* Banner & Component Styling */
         .header-banner { 
             background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
@@ -171,39 +175,77 @@
 
         <h5 class="fw-bold text-dark mb-3 mt-2">Statistik Per Cabang (Tahun {{ $tahun }})</h5>
         <div class="row g-4 mb-5">
-            @foreach($branchStats as $bs)
+            @foreach($branchStats as $index => $bs)
             <div class="col-md-4">
-                <div class="card card-stat p-4 border-top border-4 border-primary">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shop me-2"></i>{{ $bs['nama'] }}</h6>
+                <div class="card card-stat card-branch p-4 h-100 border-top border-4 border-primary" data-bs-toggle="modal" data-bs-target="#branchModal{{ $index }}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h6 class="fw-bold text-primary m-0"><i class="bi bi-shop me-2"></i>{{ $bs['nama'] }}</h6>
+                        <span class="text-muted"><i class="bi bi-box-arrow-in-up-right"></i></span>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
                         <span class="text-muted small fw-bold">Pendaftar</span>
-                        <span class="fw-bold">{{ $bs['siswa'] }} Siswa</span>
+                        <span class="fw-bold">{{ $bs['siswa_year'] }} Siswa</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted small fw-bold">Omzet Tercatat</span>
-                        <span class="fw-bold text-success">Rp {{ number_format($bs['revenue'], 0, ',', '.') }}</span>
+                        <span class="fw-bold text-success">Rp {{ number_format($bs['revenue_year'], 0, ',', '.') }}</span>
+                    </div>
+                    <div class="mt-auto pt-2 text-center">
+                        <span class="badge bg-light text-primary border rounded-pill small w-100 py-2">Klik untuk detail lengkap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Statistik Detail Per Cabang -->
+            <div class="modal fade" id="branchModal{{ $index }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content border-0 rounded-4 shadow-lg">
+                        <div class="modal-header bg-primary text-white border-0 rounded-top-4 p-4">
+                            <h5 class="modal-title fw-bold"><i class="bi bi-bar-chart-fill me-2"></i>Statistik Detail: {{ $bs['nama'] }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4 bg-light">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-white rounded-4 shadow-sm border border-light">
+                                        <p class="text-muted small fw-bold mb-1">Total Pendaftar (All-Time)</p>
+                                        <h3 class="fw-bold mb-0 text-dark">{{ $bs['siswa_all'] }} <span class="fs-6 text-muted fw-normal">Siswa</span></h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-white rounded-4 shadow-sm border border-light">
+                                        <p class="text-muted small fw-bold mb-1">Total Omzet (All-Time)</p>
+                                        <h3 class="fw-bold mb-0 text-success">Rp {{ number_format($bs['revenue_all'], 0, ',', '.') }}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card border-0 shadow-sm rounded-4 p-4">
+                                <h6 class="fw-bold text-dark mb-3">Peminatan Transmisi (Tahun {{ $tahun }})</h6>
+                                <div style="height: 250px; width: 100%;">
+                                    <!-- Canvas untuk bar chart spesifik cabang -->
+                                    <canvas id="transmisiChart{{ $index }}"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 bg-light p-4 pt-0">
+                            <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Tutup Detail</button>
+                        </div>
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
 
-        <h5 class="fw-bold text-dark mb-3">Tinjauan Grafis Global</h5>
-        <div class="row g-4 mb-5">
-            <div class="col-lg-7">
+        <h5 class="fw-bold text-dark mb-3">Tinjauan Pertumbuhan Omzet Global</h5>
+        <div class="row mb-5">
+            <div class="col-lg-12">
                 <div class="card card-stat p-4 h-100">
-                    <h6 class="fw-bold text-dark mb-4">Pertumbuhan Omzet Bulanan ({{ $tahun }})</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold text-dark m-0">Kurva Pendapatan Bulanan ({{ $tahun }})</h6>
+                    </div>
                     <div style="height: 350px;">
                         <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-5">
-                <div class="card card-stat p-4 h-100">
-                    <h6 class="fw-bold text-dark mb-4">Peminatan Transmisi ({{ $tahun }})</h6>
-                    <div style="height: 350px;">
-                        <canvas id="transmisiChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -313,7 +355,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Inisialisasi Grafik Pendapatan Garis (Line Chart)
+        // Inisialisasi Grafik Pendapatan Garis (Line Chart Global)
         const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctxRevenue, {
             type: 'line',
@@ -364,41 +406,50 @@
             }
         });
 
-        // Inisialisasi Grafik Peminatan Transmisi (Bar Chart)
-        const ctxTransmisi = document.getElementById('transmisiChart').getContext('2d');
-        new Chart(ctxTransmisi, {
-            type: 'bar',
-            data: {
-                labels: @json($transmisiLabels),
-                datasets: [
-                    {
-                        label: 'Manual',
-                        data: @json($transmisiManual),
-                        backgroundColor: '#0d6efd',
-                        borderRadius: 6
-                    },
-                    {
-                        label: 'Matic',
-                        data: @json($transmisiMatic),
-                        backgroundColor: '#20c997',
-                        borderRadius: 6
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { usePointStyle: true, boxWidth: 8, font: { weight: 'bold' } }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
+        // Setup Variabel dari Backend untuk Diagram Batang per Cabang
+        const branchStats = @json($branchStats);
+        const chartsInstance = {}; // Menyimpan instansi grafik agar tidak tumpang tindih
+
+        // Looping inisialisasi diagram batang saat Modal Cabang Terbuka
+        branchStats.forEach((bs, index) => {
+            const modalEl = document.getElementById('branchModal' + index);
+            
+            // Render grafik HANYA saat modal benar-benar terbuka agar ukuran proporsional
+            modalEl.addEventListener('shown.bs.modal', function () {
+                if (!chartsInstance[index]) {
+                    const ctx = document.getElementById('transmisiChart' + index).getContext('2d');
+                    chartsInstance[index] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Manual', 'Matic'],
+                            datasets: [{
+                                label: 'Jumlah Pendaftar',
+                                data: [bs.manual_count, bs.matic_count],
+                                backgroundColor: ['#0d6efd', '#20c997'],
+                                borderRadius: 8,
+                                barPercentage: 0.6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }, // Sembunyikan legenda karena label sumbu X sudah jelas
+                                tooltip: {
+                                    backgroundColor: '#1e293b',
+                                    padding: 12,
+                                    bodyFont: { family: 'Segoe UI', size: 13 },
+                                    displayColors: false
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } },
+                                y: { beginAtZero: true, border: { dash: [4, 4] }, ticks: { precision: 0 } }
+                            }
+                        }
+                    });
                 }
-            }
+            });
         });
     </script>
 </body>
