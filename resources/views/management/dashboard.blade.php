@@ -254,20 +254,6 @@
             @endforeach
         </div>
 
-        <h5 class="fw-bold text-dark mb-3">Tinjauan Pertumbuhan Omzet Global</h5>
-        <div class="row mb-5">
-            <div class="col-lg-12">
-                <div class="card card-stat p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h6 class="fw-bold text-dark m-0">Kurva Pendapatan Bulanan ({{ $tahun }})</h6>
-                    </div>
-                    <div style="height: 350px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <h5 class="fw-bold text-dark mb-3">Statistik Kumulatif Keseluruhan (All-Time)</h5>
         <div class="row g-4 mb-4">
             <div class="col-md-3">
@@ -323,6 +309,21 @@
                 </div>
             </div>
         </div>
+
+        <h5 class="fw-bold text-dark mb-3">Tinjauan Pertumbuhan Omzet Global</h5>
+        <div class="row mb-5">
+            <div class="col-lg-12">
+                <div class="card card-stat p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold text-dark m-0">Kurva Pendapatan Bulanan ({{ $tahun }})</h6>
+                    </div>
+                    <div style="height: 350px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
     </div>
 
