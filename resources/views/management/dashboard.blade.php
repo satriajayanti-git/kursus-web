@@ -191,45 +191,62 @@
                         <span class="fw-bold text-success">Rp {{ number_format($bs['revenue_year'], 0, ',', '.') }}</span>
                     </div>
                     <div class="mt-auto pt-2 text-center">
-                        <span class="badge bg-light text-primary border rounded-pill small w-100 py-2">Klik untuk detail lengkap</span>
+                        <span class="badge bg-light text-primary border rounded-pill small w-100 py-2">Klik untuk detail statistik</span>
                     </div>
                 </div>
             </div>
 
             <!-- Modal Statistik Detail Per Cabang -->
             <div class="modal fade" id="branchModal{{ $index }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
                     <div class="modal-content border-0 rounded-4 shadow-lg">
                         <div class="modal-header bg-primary text-white border-0 rounded-top-4 p-4">
                             <h5 class="modal-title fw-bold"><i class="bi bi-bar-chart-fill me-2"></i>Statistik Detail: {{ $bs['nama'] }}</h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4 bg-light">
+                            <!-- Metrik Global All-Time -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded-4 shadow-sm border border-light">
-                                        <p class="text-muted small fw-bold mb-1">Total Pendaftar (All-Time)</p>
+                                        <p class="text-muted small fw-bold mb-1">Total Pendaftar Keseluruhan (All-Time)</p>
                                         <h3 class="fw-bold mb-0 text-dark">{{ $bs['siswa_all'] }} <span class="fs-6 text-muted fw-normal">Siswa</span></h3>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="p-3 bg-white rounded-4 shadow-sm border border-light">
-                                        <p class="text-muted small fw-bold mb-1">Total Omzet (All-Time)</p>
+                                        <p class="text-muted small fw-bold mb-1">Total Omzet Keseluruhan (All-Time)</p>
                                         <h3 class="fw-bold mb-0 text-success">Rp {{ number_format($bs['revenue_all'], 0, ',', '.') }}</h3>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="card border-0 shadow-sm rounded-4 p-4">
-                                <h6 class="fw-bold text-dark mb-3">Peminatan Transmisi (Tahun {{ $tahun }})</h6>
-                                <div style="height: 250px; width: 100%;">
-                                    <!-- Canvas untuk bar chart spesifik cabang -->
-                                    <canvas id="transmisiChart{{ $index }}"></canvas>
+                            <!-- 🔥 REVISI: Penyesuaian Grafik Dampingan -->
+                            <div class="row g-3">
+                                <!-- Grafik 1: Tren Pendaftaran (Lebih Lebar) -->
+                                <div class="col-lg-7">
+                                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                                        <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;"><i class="bi bi-graph-up text-warning me-2"></i>Tren Pendaftaran Siswa (Tahun {{ $tahun }})</h6>
+                                        <div style="height: 220px; width: 100%;">
+                                            <canvas id="pendaftaranChart{{ $index }}"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Grafik 2: Bar Chart Peminatan Transmisi (Lebih Ramping / Dikecilkan) -->
+                                <div class="col-lg-5">
+                                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                                        <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;"><i class="bi bi-gear-fill text-primary me-2"></i>Peminatan Transmisi (Tahun {{ $tahun }})</h6>
+                                        <div style="height: 220px; width: 100%;">
+                                            <canvas id="transmisiChart{{ $index }}"></canvas>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                         <div class="modal-footer border-0 bg-light p-4 pt-0">
-                            <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Tutup Detail</button>
+                            <button type="button" class="btn btn-secondary rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Tutup Detail</button>
                         </div>
                     </div>
                 </div>
@@ -355,7 +372,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Inisialisasi Grafik Pendapatan Garis (Line Chart Global)
+        // 1. Inisialisasi Grafik Pendapatan Garis (Line Chart Global)
         const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctxRevenue, {
             type: 'line',
@@ -406,48 +423,89 @@
             }
         });
 
-        // Setup Variabel dari Backend untuk Diagram Batang per Cabang
+        // 2. Setup Grafik Dinamis untuk Modal Cabang (Bar Chart & Line Chart Baru)
         const branchStats = @json($branchStats);
-        const chartsInstance = {}; // Menyimpan instansi grafik agar tidak tumpang tindih
+        const chartsInstance = {}; 
 
-        // Looping inisialisasi diagram batang saat Modal Cabang Terbuka
         branchStats.forEach((bs, index) => {
             const modalEl = document.getElementById('branchModal' + index);
             
-            // Render grafik HANYA saat modal benar-benar terbuka agar ukuran proporsional
             modalEl.addEventListener('shown.bs.modal', function () {
-                if (!chartsInstance[index]) {
-                    const ctx = document.getElementById('transmisiChart' + index).getContext('2d');
-                    chartsInstance[index] = new Chart(ctx, {
-                        type: 'bar',
+                
+                // Cek apakah grafik pendaftaran siswa sudah dirender, jika belum, buat baru
+                if (!chartsInstance['pendaftaran' + index]) {
+                    const ctxDaftar = document.getElementById('pendaftaranChart' + index).getContext('2d');
+                    new Chart(ctxDaftar, {
+                        type: 'line',
                         data: {
-                            labels: ['Manual', 'Matic'],
+                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
                             datasets: [{
-                                label: 'Jumlah Pendaftar',
-                                data: [bs.manual_count, bs.matic_count],
-                                backgroundColor: ['#0d6efd', '#20c997'],
-                                borderRadius: 8,
-                                barPercentage: 0.6
+                                label: 'Siswa Mendaftar',
+                                data: bs.siswa_bulanan,
+                                borderColor: '#ffc107', // Warna kuning elegan / warning
+                                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                borderWidth: 3
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: false }, // Sembunyikan legenda karena label sumbu X sudah jelas
+                                legend: { display: false },
                                 tooltip: {
                                     backgroundColor: '#1e293b',
                                     padding: 12,
-                                    bodyFont: { family: 'Segoe UI', size: 13 },
+                                    bodyFont: { family: 'Segoe UI', size: 12 },
                                     displayColors: false
                                 }
                             },
                             scales: {
-                                x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } },
-                                y: { beginAtZero: true, border: { dash: [4, 4] }, ticks: { precision: 0 } }
+                                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                                y: { beginAtZero: true, border: { dash: [4, 4] }, ticks: { precision: 0, stepSize: 1, size: 11 } }
                             }
                         }
                     });
+                    chartsInstance['pendaftaran' + index] = true; 
+                }
+
+                // Cek apakah grafik peminatan transmisi (yang sudah dikecilkan) sudah dirender
+                if (!chartsInstance['transmisi' + index]) {
+                    const ctxTransmisi = document.getElementById('transmisiChart' + index).getContext('2d');
+                    new Chart(ctxTransmisi, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Manual', 'Matic'],
+                            datasets: [{
+                                label: 'Jumlah Pendaftar',
+                                data: [bs.manual_count, bs.matic_count],
+                                backgroundColor: ['#0d6efd', '#20c997'], // Kombinasi biru & hijau
+                                borderRadius: 6,
+                                barPercentage: 0.5 // 🔥 Membuat ukuran bar menjadi langsing dan proporsional
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }, 
+                                tooltip: {
+                                    backgroundColor: '#1e293b',
+                                    padding: 12,
+                                    bodyFont: { family: 'Segoe UI', size: 12 },
+                                    displayColors: false
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 11 } } },
+                                y: { beginAtZero: true, border: { dash: [4, 4] }, ticks: { precision: 0, stepSize: 1, size: 11 } }
+                            }
+                        }
+                    });
+                    chartsInstance['transmisi' + index] = true;
                 }
             });
         });
