@@ -27,7 +27,7 @@
         .card-stat:hover { transform: translateY(-5px); }
         .icon-shape { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
         
-        /* 🔥 Tambahan CSS Banner Biru & FAQ */
+        /* Banner & Component Styling */
         .header-banner { 
             background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
             border-radius: 24px; padding: 40px; color: white; position: relative; overflow: hidden;
@@ -86,14 +86,20 @@
     </div>
 
     <div class="main-content">
-        <div class="header-banner mb-5">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h2 class="fw-bold mb-2">Selamat Datang, Management! 👋</h2>
-                    <p class="m-0 opacity-75 fs-6">Pantau performa dan kendali penuh operasional Satria Jayanti hari ini.</p>
+        <div class="header-banner mb-4">
+            <div class="row align-items-center position-relative z-1">
+                <div class="col-md-7">
+                    <h2 class="fw-bold mb-2">Selamat Datang, Management!</h2>
+                    <p class="m-0 opacity-75 fs-6">Pantau performa dan kendali penuh operasional Satria Jayanti.</p>
+                    
+                    <button class="btn btn-light text-primary fw-bold rounded-pill mt-4 shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#faqModal">
+                        <i class="bi bi-info-circle-fill me-2"></i> Pusat Bantuan / FAQ
+                    </button>
                 </div>
-                <div class="col-md-4 text-md-end d-none d-md-block">
-                    <div class="d-inline-flex bg-white bg-opacity-25 p-3 rounded-4" style="backdrop-filter: blur(10px);">
+                
+                <div class="col-md-5 mt-4 mt-md-0 d-flex flex-column align-items-md-end">
+                    <!-- Profile User -->
+                    <div class="d-inline-flex bg-white bg-opacity-25 p-3 rounded-4 mb-3 shadow-sm" style="backdrop-filter: blur(10px);">
                         <div class="text-end me-3 text-white">
                             <p class="m-0 fw-bold">{{ $user->nama_lengkap }}</p>
                             <p class="m-0 small opacity-75 text-uppercase" style="font-size: 0.65rem;">Level: {{ $user->role }}</p>
@@ -102,6 +108,16 @@
                             {{ substr($user->nama_lengkap, 0, 1) }}
                         </div>
                     </div>
+
+                    <!-- Filter Data Berdasarkan Tahun -->
+                    <form action="{{ route('management.dashboard') }}" method="GET" class="d-flex bg-white p-2 rounded-pill shadow-sm mt-2 w-100" style="max-width: 300px;">
+                        <select name="tahun" class="form-select border-0 bg-transparent fw-bold" style="box-shadow: none;">
+                            @for($i = date('Y'); $i >= date('Y') - 4; $i--)
+                                <option value="{{ $i }}" {{ $tahun == $i ? 'selected' : '' }}>Tahun {{ $i }}</option>
+                            @endfor
+                        </select>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Filter</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -153,13 +169,54 @@
         </div>
         @endif
 
+        <h5 class="fw-bold text-dark mb-3 mt-2">Statistik Per Cabang (Tahun {{ $tahun }})</h5>
         <div class="row g-4 mb-5">
+            @foreach($branchStats as $bs)
+            <div class="col-md-4">
+                <div class="card card-stat p-4 border-top border-4 border-primary">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shop me-2"></i>{{ $bs['nama'] }}</h6>
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                        <span class="text-muted small fw-bold">Pendaftar</span>
+                        <span class="fw-bold">{{ $bs['siswa'] }} Siswa</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small fw-bold">Omzet Tercatat</span>
+                        <span class="fw-bold text-success">Rp {{ number_format($bs['revenue'], 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <h5 class="fw-bold text-dark mb-3">Tinjauan Grafis Global</h5>
+        <div class="row g-4 mb-5">
+            <div class="col-lg-7">
+                <div class="card card-stat p-4 h-100">
+                    <h6 class="fw-bold text-dark mb-4">Pertumbuhan Omzet Bulanan ({{ $tahun }})</h6>
+                    <div style="height: 350px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="card card-stat p-4 h-100">
+                    <h6 class="fw-bold text-dark mb-4">Peminatan Transmisi ({{ $tahun }})</h6>
+                    <div style="height: 350px;">
+                        <canvas id="transmisiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-dark mb-3">Statistik Kumulatif Keseluruhan (All-Time)</h5>
+        <div class="row g-4 mb-4">
             <div class="col-md-3">
                 <div class="card card-stat p-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted small fw-bold mb-1">TOTAL CABANG</p>
-                            <h3 class="fw-bold text-dark mb-0">{{ $totalCabang }}</h3>
+                            <h4 class="fw-bold text-dark mb-0">{{ $totalCabang }}</h4>
                         </div>
                         <div class="icon-shape bg-primary-subtle text-primary">
                             <i class="bi bi-geo-alt fs-4"></i>
@@ -172,7 +229,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted small fw-bold mb-1">TOTAL SISWA</p>
-                            <h3 class="fw-bold text-dark mb-0">{{ $totalSiswa }}</h3>
+                            <h4 class="fw-bold text-dark mb-0">{{ $totalSiswa }}</h4>
                         </div>
                         <div class="icon-shape bg-success-subtle text-success">
                             <i class="bi bi-people fs-4"></i>
@@ -185,7 +242,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted small fw-bold mb-1">INSTRUKTUR</p>
-                            <h3 class="fw-bold text-dark mb-0">{{ $totalInstruktur }}</h3>
+                            <h4 class="fw-bold text-dark mb-0">{{ $totalInstruktur }}</h4>
                         </div>
                         <div class="icon-shape bg-warning-subtle text-warning">
                             <i class="bi bi-person-badge fs-4"></i>
@@ -198,7 +255,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <p class="text-muted small fw-bold mb-1">TOTAL OMZET</p>
-                            <h4 class="fw-bold text-dark mb-0">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</h4>
+                            <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</h5>
                         </div>
                         <div class="icon-shape bg-info-subtle text-info">
                             <i class="bi bi-wallet2 fs-4"></i>
@@ -208,42 +265,43 @@
             </div>
         </div>
 
-        <div class="row mb-5">
-            <div class="col-lg-12">
-                <div class="card card-stat p-4">
-                    <h5 class="fw-bold text-dark mb-4">Grafik Pertumbuhan Omzet ({{ date('Y') }})</h5>
-                    <div style="height: 400px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </div>
 
-        <div class="row">
-            <div class="col-12">
-                <h5 class="fw-bold mb-4">FAQ & Pusat Bantuan Management</h5>
-                <div class="accordion faq-accordion" id="faqSj">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">
-                                Bagaimana cara memantau laporan antar cabang?
-                            </button>
-                        </h2>
-                        <div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faqSj">
-                            <div class="accordion-body">
-                                Pilih menu <strong>Laporan Keuangan</strong>, lalu gunakan filter cabang untuk melihat data spesifik masing-masing wilayah tugas.
+    <!-- Modal FAQ Bantuan -->
+    <div class="modal fade" id="faqModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0 rounded-top-4 p-4">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1"><i class="bi bi-info-circle-fill me-2"></i> FAQ & Pusat Bantuan Management</h5>
+                        <p class="mb-0 small opacity-75">Panduan mengelola data tingkat executive perusahaan.</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="accordion faq-accordion" id="faqSj">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">
+                                    Bagaimana cara memantau laporan antar cabang?
+                                </button>
+                            </h2>
+                            <div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faqSj">
+                                <div class="accordion-body text-muted small lh-lg">
+                                    Pilih menu <strong>Laporan Keuangan</strong> di sidebar, lalu gunakan filter cabang yang tersedia untuk melihat data transaksi secara spesifik untuk masing-masing wilayah tugas. Anda juga dapat menggunakan tombol Filter Tahun di bagian atas dashboard untuk menyaring tren grafik per tahun.
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">
-                                Apa yang harus dilakukan jika unit kendaraan masuk masa jatuh tempo?
-                            </button>
-                        </h2>
-                        <div id="f2" class="accordion-collapse collapse" data-bs-parent="#faqSj">
-                            <div class="accordion-body">
-                                Segera lakukan perpanjangan ke Samsat/Dinas terkait, lalu update tanggal masa berlaku baru di menu <strong>Manajemen Unit</strong> agar notifikasi di dashboard ini segera hilang.
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">
+                                    Apa yang harus dilakukan jika unit kendaraan masuk masa jatuh tempo?
+                                </button>
+                            </h2>
+                            <div id="f2" class="accordion-collapse collapse" data-bs-parent="#faqSj">
+                                <div class="accordion-body text-muted small lh-lg">
+                                    Instruksikan tim administrasi untuk segera melakukan perpanjangan dokumen legal ke Samsat/Dinas terkait. Setelah diperpanjang, update "Tanggal Jatuh Tempo" terbaru melalui menu <strong>Manajemen Unit</strong>. Sistem peringatan akan hilang secara otomatis.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,8 +313,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        new Chart(ctx, {
+        // Inisialisasi Grafik Pendapatan Garis (Line Chart)
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctxRevenue, {
             type: 'line',
             data: {
                 labels: @json($chartBulan),
@@ -301,6 +360,43 @@
                             } 
                         } 
                     }
+                }
+            }
+        });
+
+        // Inisialisasi Grafik Peminatan Transmisi (Bar Chart)
+        const ctxTransmisi = document.getElementById('transmisiChart').getContext('2d');
+        new Chart(ctxTransmisi, {
+            type: 'bar',
+            data: {
+                labels: @json($transmisiLabels),
+                datasets: [
+                    {
+                        label: 'Manual',
+                        data: @json($transmisiManual),
+                        backgroundColor: '#0d6efd',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Matic',
+                        data: @json($transmisiMatic),
+                        backgroundColor: '#20c997',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, boxWidth: 8, font: { weight: 'bold' } }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
         });
