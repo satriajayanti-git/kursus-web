@@ -4,6 +4,8 @@
     </IfModule>
 
     RewriteEngine On
+    RewriteRule ^storage/app/public/ - [L]
+    RewriteRule ^storage/(.*)$ storage/app/public/$1 [L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
