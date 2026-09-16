@@ -1,6 +1,7 @@
-<div class="sidebar bg-white border-end d-flex flex-column" style="width: 280px; min-height: 100vh; position: sticky; top: 0; z-index: 1000;">
-    <div class="sidebar-logo text-center pt-4 pb-3 border-bottom">
-        
+<div class="sidebar bg-white border-end d-flex flex-column flex-shrink-0" style="width: 280px; min-width: 280px; height: 100vh; position: sticky; top: 0; left: 0; z-index: 1000; overflow-hidden;">
+    
+    <!-- Logo & Header (Tetap di atas) -->
+    <div class="sidebar-logo text-center pt-4 pb-3 border-bottom flex-shrink-0">
         @if(isset($setting) && $setting->logo)
             <img src="{{ asset('uploads/settings/'.$setting->logo) }}" style="height: 65px; width: auto; object-fit: contain;" alt="Logo" class="mb-2">
         @else
@@ -11,7 +12,8 @@
         <p class="text-muted small mt-1 mb-0 fw-bold text-uppercase" style="letter-spacing: 1.5px; font-size: 0.7rem;">Executive Panel</p>
     </div>
     
-    <div class="p-3 flex-grow-1">
+    <!-- Menu Navigasi (Diberikan scroll mandiri agar stabil dan tidak meluber) -->
+    <div class="p-3 flex-grow-1 overflow-y-auto">
         <div class="menu-label text-muted mb-2 mt-2" style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Main Analytics</div>
         <a href="{{ url('/management/dashboard') }}" class="nav-link-custom {{ request()->is('management/dashboard') ? 'active' : '' }}">
             <i class="bi bi-grid-1x2-fill me-3"></i> Executive Dashboard
@@ -42,7 +44,8 @@
         </a>
     </div>
 
-    <div class="p-4 border-top">
+    <!-- Tombol Logout (Tetap menempel di bagian bawah sidebar) -->
+    <div class="p-4 border-top flex-shrink-0 bg-white">
         <form action="{{ url('/logout') }}" method="POST">
             @csrf
             <button class="btn btn-outline-danger w-100 fw-bold rounded-pill shadow-sm">
