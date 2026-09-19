@@ -446,7 +446,7 @@
                                     @else
                                         <div class="text-center p-4 bg-success bg-opacity-10 rounded-4 border border-success-subtle mt-3">
                                             <i class="bi bi-check-circle-fill text-success display-4 mb-2 d-block"></i>
-                                            <h5 class="fw-bold text-success mb-0">Pembayaran Lunas</h5>
+                                            <h5 class="fw-bold text-success mb-0">Pembayaran Berhasil</h5>
                                         </div>
                                     @endif
                                 </div>
