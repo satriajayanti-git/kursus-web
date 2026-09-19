@@ -142,7 +142,6 @@
                     
                     <div class="card card-custom bg-primary text-white p-4 mb-4">
                         <h3 class="fw-bold mb-1">Halo, {{ explode(' ', $user->nama_lengkap)[0] }}!</h3>
-                        <h6 class="fw-bold mb-2">ID Pendaftaran : {{ $user->id_siswa ?? '-' }}</h6>
                         <p class="mb-0 opacity-75 small">Kelola dan ajukan jadwal sesi latihan Anda di halaman ini.</p>
                     </div>
 
