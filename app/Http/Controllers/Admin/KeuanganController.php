@@ -25,7 +25,7 @@ class KeuanganController extends Controller
         $tahun = date('Y', strtotime($bulan));
         $bulan_angka = date('m', strtotime($bulan));
 
-        // Total omset berdasarkan tanggal mutasi (updated_at)
+        // Hitung total omset berdasarkan tanggal mutasi (updated_at)
         $total_omset = Pembayaran::where('branch_id', $user->branch_id)
             ->where('status', 'Lunas')
             ->whereYear('updated_at', $tahun)
@@ -35,36 +35,43 @@ class KeuanganController extends Controller
         // Data Siswa untuk dropdown Modal Tambah Tagihan
         $siswas = User::where('role', 'siswa')->where('branch_id', $user->branch_id)->get();
 
-        // 🔥 LOGIC BARU: Mengambil Siswa yang memiliki Mutasi (Pembayaran) di bulan terpilih
-        $query = User::with(['package', 'pembayarans' => function ($q) use ($tahun, $bulan_angka) {
-            $q->whereYear('updated_at', $tahun)
-              ->whereMonth('updated_at', $bulan_angka)
-              ->orderBy('updated_at', 'desc');
-        }])
-        ->where('role', 'siswa')
-        ->where('branch_id', $user->branch_id)
-        ->whereHas('pembayarans', function ($q) use ($tahun, $bulan_angka, $status_bayar) {
-            $q->whereYear('updated_at', $tahun)
-              ->whereMonth('updated_at', $bulan_angka);
-            if (!empty($status_bayar) && $status_bayar !== 'Semua') {
-                $q->where('status', $status_bayar);
-            }
-        });
+        // 🔥 LOGIC PERBAIKAN: Query dari sisi tabel Pembayaran (menghindari error Model User)
+        $query = Pembayaran::with(['user.package'])
+            ->where('branch_id', $user->branch_id)
+            ->whereYear('updated_at', $tahun)
+            ->whereMonth('updated_at', $bulan_angka)
+            ->whereHas('user', function ($q) {
+                $q->where('role', 'siswa');
+            });
+
+        if (!empty($status_bayar) && $status_bayar !== 'Semua') {
+            $query->where('status', $status_bayar);
+        }
 
         if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', '%' . $search . '%')
                   ->orWhere('username', 'like', '%' . $search . '%')
                   ->orWhere('id_siswa', 'like', '%' . $search . '%');
             });
         }
 
-        $siswasMutasi = $query->get();
+        $pembayaransData = $query->orderBy('updated_at', 'desc')->get();
+
+        // Mengelompokkan riwayat pembayaran per siswa ke dalam Collection baru
+        $siswasMutasi = collect();
+        foreach ($pembayaransData->groupBy('user_id') as $userId => $payments) {
+            $siswa = $payments->first()->user;
+            if ($siswa) {
+                // Menanamkan relasi secara paksa agar file index.blade.php bisa membacanya tanpa error
+                $siswa->setRelation('pembayarans', $payments);
+                $siswasMutasi->push($siswa);
+            }
+        }
 
         return view('admin.keuangan.index', compact('siswasMutasi', 'siswas', 'total_omset', 'search', 'bulan', 'status_bayar'));
     }
 
-    // 🔥 LOGIC BARU: Validasi Pembayaran Gabungan (Bulk Payment)
     public function updateStatusBulk(Request $request)
     {
         $request->validate([
@@ -82,7 +89,6 @@ class KeuanganController extends Controller
                     'approved_by' => Auth::id()
                 ]);
 
-                // Update status aktif siswa jika paket utama diverifikasi
                 if ($pembayaran->jenis_tagihan === 'Paket Utama') {
                     $siswa = User::find($pembayaran->user_id);
                     if ($siswa) {

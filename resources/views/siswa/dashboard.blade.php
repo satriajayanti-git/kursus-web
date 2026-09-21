@@ -450,7 +450,7 @@
                             <div class="accordion mb-4 shadow-sm" id="accordionTagihanTambahan">
                                 <div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden">
                                     <h2 class="accordion-header">
-                                        @php $adaTanggungan = $tagihanTambahan->whereIn('status', ['Pending', 'Ditolak'])->orWhereNull('bukti_bayar')->count() > 0; @endphp
+                                        @php $adaTanggungan = $tagihanTambahan->where('status', '!=', 'Lunas')->count() > 0; @endphp
                                         <button class="accordion-button bg-white {{ $adaTanggungan ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTambahan">
                                             <i class="bi bi-receipt-cutoff me-2 text-warning fs-5"></i> 
                                             <strong>Tagihan Tambahan ({{ $tagihanTambahan->count() }})</strong>
