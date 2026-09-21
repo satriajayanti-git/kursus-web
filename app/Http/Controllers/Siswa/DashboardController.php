@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Siswa;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\{Pembayaran, Jadwal, Setting, User};
+use App\Models\{Pembayaran, Jadwal, Setting, User, Unit};
 use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
@@ -22,7 +22,6 @@ class DashboardController extends Controller
                                     ->where('jenis_tagihan', 'Tambahan')
                                     ->orderBy('created_at', 'desc')->get();
         
-        // 🔥 REVISI: Menyembunyikan jadwal yang berstatus Batal/Dibatalkan agar hilang dari halaman siswa
         $mySchedules = Jadwal::with('instructor')
                                     ->where('user_id', $user->id)
                                     ->whereNotIn('status', ['Batal', 'Dibatalkan']) 
@@ -36,11 +35,103 @@ class DashboardController extends Controller
             $totalSesi += 1;
         }
 
-        // Logic kuota ini sudah otomatis mengabaikan yang "Batal", sehingga kuota akan kembali bertambah.
         $sesiTerpakai = Jadwal::where('user_id', $user->id)->where('status', '!=', 'Batal')->count();
         $sisaSesi = $totalSesi - $sesiTerpakai;
 
-        return view('siswa.dashboard', compact('user', 'tagihanUtama', 'tagihanTambahan', 'setting', 'mySchedules', 'sisaSesi', 'riwayatPembayaran'));
+        // 🔥 LOGIC BARU: Summary Keuangan
+        $totalTerbayar = Pembayaran::where('user_id', $user->id)
+                                   ->where('status', 'Lunas')
+                                   ->sum('total_tagihan');
+                                   
+        $totalBelumDibayar = Pembayaran::where('user_id', $user->id)
+                                       ->where(function($q) {
+                                           $q->where('status', '!=', 'Lunas')
+                                             ->orWhereNull('status');
+                                       })->sum('total_tagihan');
+
+        return view('siswa.dashboard', compact(
+            'user', 'tagihanUtama', 'tagihanTambahan', 'setting', 'mySchedules', 
+            'sisaSesi', 'riwayatPembayaran', 'totalTerbayar', 'totalBelumDibayar'
+        ));
+    }
+
+    // 🔥 LOGIC BARU: API Cek Ketersediaan Unit Berdasarkan Tanggal
+    public function cekKetersediaanUnit(Request $request)
+    {
+        $user = User::with('package')->find(Auth::id());
+        $transmisiSiswa = $user->package->transmisi ?? 'Manual';
+        $branchId = $user->branch_id;
+        $tanggal = $request->tanggal;
+
+        // Hitung Total Fisik Mobil di Cabang sesuai transmisi siswa
+        $totalUnit = Unit::where('branch_id', $branchId)
+                         ->where('transmisi', $transmisiSiswa)
+                         ->count();
+
+        $jamList = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
+        $result = [];
+
+        foreach ($jamList as $jam) {
+            // Hitung jadwal aktif yang sudah memakai mobil dengan transmisi tersebut di jam & tanggal ini
+            $terpakai = Jadwal::where('branch_id', $branchId)
+                              ->where('tanggal', $tanggal)
+                              ->where('jam_mulai', $jam)
+                              ->whereNotIn('status', ['Batal', 'Dibatalkan'])
+                              ->whereHas('user.package', function($q) use ($transmisiSiswa) {
+                                  $q->where('transmisi', $transmisiSiswa);
+                              })->count();
+
+            $tersedia = $totalUnit - $terpakai;
+            if($tersedia < 0) $tersedia = 0;
+
+            $result[] = [
+                'jam_mulai' => $jam,
+                'tersedia' => $tersedia,
+                'total' => $totalUnit
+            ];
+        }
+
+        return response()->json($result);
+    }
+
+    // 🔥 LOGIC BARU: Pembayaran Massal (Bulk Payment)
+    public function bayarBulk(Request $request)
+    {
+        $request->validate([
+            'tagihan_ids'       => 'required|array',
+            'bukti_bayar'       => 'required|image|max:3048',
+            'metode_pembayaran' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        $file = $request->file('bukti_bayar');
+        // Generate 1 nama file unik untuk disematkan ke semua tagihan terpilih
+        $namaFile = time() . '_bulk_' . $user->id . '.' . $file->getClientOriginalExtension();
+        $file->storeAs('uploads/bukti', $namaFile, 'public');
+
+        foreach ($request->tagihan_ids as $id) {
+            $tagihan = Pembayaran::where('id', $id)->where('user_id', $user->id)->first();
+            if ($tagihan) {
+                // Hapus bukti lama jika ada
+                if ($tagihan->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $tagihan->bukti_bayar)) {
+                    Storage::disk('public')->delete('uploads/bukti/' . $tagihan->bukti_bayar);
+                }
+
+                $keteranganUpdate = $tagihan->keterangan;
+                if (!str_contains($keteranganUpdate, 'Via Bank:')) {
+                    $keteranganUpdate = $keteranganUpdate . ' (Via Bank: ' . $request->metode_pembayaran . ')';
+                }
+
+                $tagihan->update([
+                    'bukti_bayar' => $namaFile,
+                    'status'      => 'Pending',
+                    'penolakan'   => null,
+                    'keterangan'  => $keteranganUpdate
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Pembayaran gabungan berhasil diunggah! Mohon lakukan konfirmasi ke Admin.');
     }
 
     public function uploadBukti(Request $request, $id)
