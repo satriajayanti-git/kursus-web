@@ -76,15 +76,18 @@ class RegisterController extends Controller
 
             $package = Package::where('id_package', $request->package_id)->first();
 
-            // 2. Otomatisasi Invoice Paket Utama
+            // 🔥 REVISI: Penambahan Biaya Pendaftaran Rp 40.000 ke Tagihan Utama
+            $biaya_pendaftaran = 40000;
+
+            // 2. Otomatisasi Invoice Paket Utama (Telah di-include biaya pendaftaran)
             Pembayaran::create([
                 'user_id'       => $user->id,
                 'id_package'    => $request->package_id,
                 'branch_id'     => $request->branch_id,
-                'total_tagihan' => $package->harga,
+                'total_tagihan' => $package->harga + $biaya_pendaftaran,
                 'jenis_tagihan' => 'Paket Utama',
                 'status'        => 'Pending',
-                'keterangan'    => 'Pendaftaran kursus paket: ' . $package->nama_package
+                'keterangan'    => 'Pendaftaran kursus paket: ' . $package->nama_package . ' (+ Biaya Pendaftaran)'
             ]);
         });
 
