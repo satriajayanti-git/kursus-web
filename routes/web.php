@@ -46,6 +46,8 @@ Route::post('/register', [RegisterController::class, 'register']);
 Route::middleware(['auth', CheckRole::class . ':siswa'])->prefix('siswa')->group(function () {
     Route::get('/dashboard', [SiswaDashboard::class, 'index'])->name('siswa.dashboard');
     Route::post('/bayar/{id}', [SiswaDashboard::class, 'uploadBukti']);
+    Route::post('/bayar-bulk', [SiswaDashboard::class, 'bayarBulk']); 
+    Route::get('/cek-unit', [SiswaDashboard::class, 'cekKetersediaanUnit']); 
     Route::post('/simpan-jadwal', [SiswaDashboard::class, 'simpanJadwal']);
     Route::post('/feedback/{id}', [SiswaDashboard::class, 'simpanFeedback']);
 });
