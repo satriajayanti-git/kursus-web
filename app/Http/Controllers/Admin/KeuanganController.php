@@ -22,64 +22,98 @@ class KeuanganController extends Controller
         $status_bayar = $request->status_bayar ?? '';
         $search = $request->search;
 
-        $query = Pembayaran::with(['user', 'package'])
-            ->where('branch_id', $user->branch_id);
-
         $tahun = date('Y', strtotime($bulan));
         $bulan_angka = date('m', strtotime($bulan));
-        $query->whereYear('created_at', $tahun)->whereMonth('created_at', $bulan_angka);
 
-        if (!empty($status_bayar) && $status_bayar !== 'Semua') {
-            $query->where('status', $status_bayar);
-        }
+        // Total omset berdasarkan tanggal mutasi (updated_at)
+        $total_omset = Pembayaran::where('branch_id', $user->branch_id)
+            ->where('status', 'Lunas')
+            ->whereYear('updated_at', $tahun)
+            ->whereMonth('updated_at', $bulan_angka)
+            ->sum('total_tagihan');
+
+        // Data Siswa untuk dropdown Modal Tambah Tagihan
+        $siswas = User::where('role', 'siswa')->where('branch_id', $user->branch_id)->get();
+
+        // 🔥 LOGIC BARU: Mengambil Siswa yang memiliki Mutasi (Pembayaran) di bulan terpilih
+        $query = User::with(['package', 'pembayarans' => function ($q) use ($tahun, $bulan_angka) {
+            $q->whereYear('updated_at', $tahun)
+              ->whereMonth('updated_at', $bulan_angka)
+              ->orderBy('updated_at', 'desc');
+        }])
+        ->where('role', 'siswa')
+        ->where('branch_id', $user->branch_id)
+        ->whereHas('pembayarans', function ($q) use ($tahun, $bulan_angka, $status_bayar) {
+            $q->whereYear('updated_at', $tahun)
+              ->whereMonth('updated_at', $bulan_angka);
+            if (!empty($status_bayar) && $status_bayar !== 'Semua') {
+                $q->where('status', $status_bayar);
+            }
+        });
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->whereHas('user', function ($qUser) use ($search) {
-                    $qUser->where('nama_lengkap', 'like', '%' . $search . '%')
-                        ->orWhere('username', 'like', '%' . $search . '%')
-                        ->orWhere('id_siswa', 'like', '%' . $search . '%');
-                });
+                $q->where('nama_lengkap', 'like', '%' . $search . '%')
+                  ->orWhere('username', 'like', '%' . $search . '%')
+                  ->orWhere('id_siswa', 'like', '%' . $search . '%');
             });
         }
 
-        $pembayarans = $query->orderBy('created_at', 'desc')->get();
+        $siswasMutasi = $query->get();
 
-        $total_omset = Pembayaran::where('branch_id', $user->branch_id)
-            ->where('status', 'Lunas')
-            ->whereYear('created_at', $tahun)
-            ->whereMonth('created_at', $bulan_angka)
-            ->sum('total_tagihan');
+        return view('admin.keuangan.index', compact('siswasMutasi', 'siswas', 'total_omset', 'search', 'bulan', 'status_bayar'));
+    }
 
-        $siswas = User::where('role', 'siswa')->where('branch_id', $user->branch_id)->get();
+    // 🔥 LOGIC BARU: Validasi Pembayaran Gabungan (Bulk Payment)
+    public function updateStatusBulk(Request $request)
+    {
+        $request->validate([
+            'tagihan_ids' => 'required|array',
+            'status'      => 'required|in:Pending,Lunas,Ditolak',
+            'penolakan'   => 'nullable|string',
+        ]);
 
-        return view('admin.keuangan.index', compact('pembayarans', 'siswas', 'total_omset', 'search', 'bulan', 'status_bayar'));
+        foreach ($request->tagihan_ids as $id) {
+            $pembayaran = Pembayaran::find($id);
+            if ($pembayaran) {
+                $pembayaran->update([
+                    'status'      => $request->status,
+                    'penolakan'   => $request->status == 'Ditolak' ? $request->penolakan : null,
+                    'approved_by' => Auth::id()
+                ]);
+
+                // Update status aktif siswa jika paket utama diverifikasi
+                if ($pembayaran->jenis_tagihan === 'Paket Utama') {
+                    $siswa = User::find($pembayaran->user_id);
+                    if ($siswa) {
+                        $siswa->update(['status' => $request->status === 'Lunas' ? 'Aktif' : 'Non-Aktif']);
+                    }
+                }
+            }
+        }
+
+        return back()->with('success', 'Verifikasi Pembayaran Gabungan berhasil diproses!');
     }
 
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:Pending,Lunas,Ditolak',
-            'penolakan' => 'nullable|string',
-            'bukti_bayar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'status'            => 'required|in:Pending,Lunas,Ditolak',
+            'penolakan'         => 'nullable|string',
+            'bukti_bayar'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'metode_pembayaran' => 'nullable|string',
-            'jenis_bayar' => 'nullable|in:full,dp',
-            'nominal_dp' => 'nullable|numeric|min:50000'
+            'jenis_bayar'       => 'nullable|in:full,dp',
+            'nominal_dp'        => 'nullable|numeric|min:50000'
         ]);
 
         $pembayaran = Pembayaran::findOrFail($id);
 
         $data = [
-            'status' => $request->status,
-            // 🔥 REVISI AUDIT KEUANGAN: Catat ID admin spesifik yang memproses transaksi
+            'status'      => $request->status,
             'approved_by' => Auth::id(), 
         ];
 
-        if ($request->status == 'Ditolak') {
-            $data['penolakan'] = $request->penolakan;
-        } else {
-            $data['penolakan'] = null;
-        }
+        $data['penolakan'] = $request->status == 'Ditolak' ? $request->penolakan : null;
 
         if ($request->hasFile('bukti_bayar')) {
             if ($pembayaran->bukti_bayar && Storage::disk('public')->exists('uploads/bukti/' . $pembayaran->bukti_bayar)) {
@@ -88,9 +122,7 @@ class KeuanganController extends Controller
 
             $file = $request->file('bukti_bayar');
             $namaFile = time() . '_admin_upload_' . str_replace(' ', '_', $file->getClientOriginalName());
-
             $file->storeAs('uploads/bukti', $namaFile, 'public');
-
             $data['bukti_bayar'] = $namaFile;
         }
 
@@ -100,9 +132,7 @@ class KeuanganController extends Controller
             $keteranganUpdate = $keteranganUpdate . ' (Via: ' . $request->metode_pembayaran . ')';
         }
 
-        // LOGIC SPLIT INVOICE (VIA VERIFIKASI ADMIN)
         if ($request->status == 'Lunas' && $request->jenis_bayar === 'dp' && $pembayaran->jenis_tagihan === 'Paket Utama' && $request->nominal_dp) {
-            
             $sudahAdaPelunasan = Pembayaran::where('user_id', $pembayaran->user_id)
                 ->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')
                 ->exists();
@@ -122,26 +152,18 @@ class KeuanganController extends Controller
                         'jenis_tagihan' => 'Tambahan',
                         'keterangan'    => 'Pelunasan Sisa Pembayaran Paket Utama',
                         'status'        => 'Pending',
-                        // approved_by dikosongkan dulu karena invoice ini belum dibayar
                     ]);
                 }
             }
         }
+        
         $data['keterangan'] = $keteranganUpdate;
-
-        // Eksekusi Update ke Database
         $pembayaran->update($data);
 
-        // LOGIC AKTIVASI SISWA
         if ($pembayaran->jenis_tagihan === 'Paket Utama') {
             $siswa = User::find($pembayaran->user_id);
-
             if ($siswa) {
-                if ($request->status === 'Lunas') {
-                    $siswa->update(['status' => 'Aktif']);
-                } else {
-                    $siswa->update(['status' => 'Non-Aktif']);
-                }
+                $siswa->update(['status' => $request->status === 'Lunas' ? 'Aktif' : 'Non-Aktif']);
             }
         }
 
@@ -151,40 +173,21 @@ class KeuanganController extends Controller
     public function storeTambahan(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id'       => 'required|exists:users,id',
             'total_tagihan' => 'required|numeric',
-            'keterangan' => 'required|string',
+            'keterangan'    => 'required|string',
         ]);
 
         Pembayaran::create([
-            'user_id' => $request->user_id,
-            'branch_id' => Auth::user()->branch_id,
+            'user_id'       => $request->user_id,
+            'branch_id'     => Auth::user()->branch_id,
             'total_tagihan' => $request->total_tagihan,
             'jenis_tagihan' => 'Tambahan',
-            'keterangan' => $request->keterangan,
-            'status' => 'Pending',
-            'approved_by' => Auth::id(), // Opsional: merekam admin pembuat tagihan
+            'keterangan'    => $request->keterangan,
+            'status'        => 'Pending',
+            'approved_by'   => Auth::id(),
         ]);
 
         return back()->with('success', 'Tagihan tambahan berhasil dibuat!');
-    }
-
-    public function generateReport(Request $request)
-    {
-        $request->validate([
-            'tgl_mulai' => 'required|date',
-            'tgl_akhir' => 'required|date|after_or_equal:tgl_mulai'
-        ]);
-
-        $user = Auth::user();
-
-        $data = Pembayaran::with(['user', 'package'])
-            ->where('branch_id', $user->branch_id)
-            ->where('status', 'Lunas')
-            ->whereBetween('updated_at', [$request->tgl_mulai . ' 00:00:00', $request->tgl_akhir . ' 23:59:59'])
-            ->orderBy('updated_at', 'asc')
-            ->get();
-
-        return view('admin.keuangan.report', compact('data'));
     }
 }
