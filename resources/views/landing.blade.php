@@ -208,7 +208,6 @@
             .hero-section { padding: 120px 0 60px; }
             .hero-badge-modern { padding: 6px 15px; font-size: 0.75rem; }
             
-            /* Penyesuaian Card & Padding di Mobile */
             .card-vision-mission { padding: 1.5rem; }
             .card-icon-header { width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem; }
             
@@ -219,11 +218,9 @@
             .flow-step-item { padding: 1.5rem 1rem; }
             .flow-icon-visual { font-size: 2.2rem; margin-bottom: 1rem; }
             
-            /* Paket & Cabang Card di Mobile */
             .branch-frame-img { height: 180px; }
-            .gallery-photo-item { height: 160px; } /* Menghindari galeri terlalu memanjang */
+            .gallery-photo-item { height: 160px; }
             
-            /* Penyesuaian Tombol di Mobile */
             .btn-maps-premium, .btn-wa-premium { font-size: 0.8rem; padding-top: 0.6rem; padding-bottom: 0.6rem; }
         }
     </style>
@@ -234,7 +231,6 @@
         <nav class="navbar navbar-expand-lg navbar-floating">
             <div class="container-fluid px-2">
                 <a class="navbar-brand d-flex align-items-center text-decoration-none" href="#">
-                    <!-- 🔥 DIR: storage/uploads ditambahkan -->
                     @if(isset($setting) && $setting->logo)
                         <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo" height="35" class="me-2 rounded">
                     @else
@@ -253,7 +249,9 @@
                         <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#alur">Alur</a></li>
                         <li class="nav-item"><a class="nav-link my-2 my-lg-0" href="#galeri">Gallery</a></li>
                     </ul>
-                    <div class="d-flex mt-3 mt-lg-0">
+                    <!-- Tombol Daftar Kursus & Login Berdampingan di Samping Kanan -->
+                    <div class="d-flex flex-column flex-lg-row align-items-center gap-2 mt-3 mt-lg-0">
+                        <a href="{{ url('/register') }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold px-3 py-2" style="font-size: 0.85rem; border-color: var(--sj-primary);">Daftar Kursus</a>
                         <a href="{{ url('/login') }}" class="btn btn-login-portal w-100">Login</a>
                     </div>
                 </div>
@@ -268,7 +266,6 @@
                     <div class="hero-badge-modern"><i class="bi bi-shield-lock-fill me-2"></i>Sekolah Mengemudi Berstandar Nasional</div>
                     <h1>Berkendara Aman,<br>Mulai dari <span>Sini.</span></h1>
                     <p>PT. Satria Jayanti membentuk pengemudi berkarakter, tangkas, dan bertanggung jawab. Dibimbing instruktur profesional dengan armada tersertifikasi.</p>
-                    <!-- 🔥 Px/Py disesuaikan untuk layar mobile & desktop -->
                     <a href="{{ url('/register') }}" class="btn btn-primary px-4 py-2 px-md-5 py-md-3 rounded-pill shadow fw-bold border-0" style="background: var(--sj-primary);">Daftar Kursus <i class="bi bi-arrow-right-circle-fill ms-2"></i></a>
                 </div>
             </div>
@@ -520,7 +517,6 @@
                 return;
             }
 
-            // Wajib pilih Kategori dulu agar paket muncul
             if (!valKategori) {
                 if (initialMessage) initialMessage.classList.remove('d-none');
                 paketCards.forEach(card => card.classList.add('d-none'));
@@ -531,17 +527,14 @@
             if (initialMessage) initialMessage.classList.add('d-none');
 
             paketCards.forEach(card => {
-                // Membaca langsung nilai murni dari atribut data (sinkron dengan ENUM)
                 const cardKat = card.getAttribute('data-kategori');
                 const cardTrans = card.getAttribute('data-transmisi');
                 
-                // Pencocokan ketat
                 const matchKategori = (cardKat === valKategori);
                 const matchTransmisi = (!valTransmisi || valTransmisi === 'Semua' || cardTrans === valTransmisi);
 
                 if (matchKategori && matchTransmisi) {
                     card.classList.remove('d-none');
-                    // Trik animasi masuk yang smooth
                     card.style.opacity = '0';
                     setTimeout(() => { card.style.transition = 'opacity 0.4s ease'; card.style.opacity = '1'; }, 50);
                     visibleCount++;
@@ -577,7 +570,6 @@
                 <div class="branch-modern-card d-flex flex-column h-100 shadow-sm position-relative">
                     
                     <div class="position-relative overflow-hidden">
-                        <!-- 🔥 DIR: storage/uploads ditambahkan -->
                         @if($b->foto)
                             <img src="{{ asset('storage/uploads/branches/'.$b->foto) }}" class="branch-frame-img" alt="{{ $b->nama_cabang }}">
                         @else
@@ -597,7 +589,6 @@
                         <p class="text-primary fw-bolder small mb-2 text-uppercase"><i class="bi bi-signpost-2-fill me-1"></i> {{ $b->lokasi }}</p>
                         <p class="text-muted small mb-4 flex-grow-1" style="line-height: 1.6;">{{ $b->detail ?? 'Cabang resmi pelatihan mengemudi PT. Satria Jayanti dengan fasilitas lengkap dan armada yang terawat.' }}</p>
                         
-                        <!-- 🔥 Flex-column flex-sm-row memastikan tombol sejajar di layar besar, tapi numpuk cantik di layar HP kecil -->
                         <div class="d-flex flex-column flex-sm-row gap-2 mt-auto pt-3 border-top border-light">
                             @if($b->link_gmaps)
                                 <a href="{{ $b->link_gmaps }}" target="_blank" class="btn btn-maps-premium w-100 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
@@ -648,7 +639,6 @@
                 @forelse($galleries as $g)
                 <div class="col-6 col-md-3">
                     <div class="gallery-photo-item shadow-sm">
-                        <!-- 🔥 DIR: storage/uploads ditambahkan -->
                         @if($g->foto)
                             <img src="{{ asset('storage/uploads/gallery/'.$g->foto) }}" alt="Galeri" class="w-100 h-100 object-fit-cover">
                         @else
@@ -669,7 +659,6 @@
     <footer class="footer-modern-section">
         <div class="container text-center">
             <div class="d-flex align-items-center justify-content-center mb-4">
-                <!-- 🔥 DIR: storage/uploads ditambahkan -->
                 @if(isset($setting) && $setting->logo)
                     <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" alt="Logo Footer" height="45" class="me-3 rounded shadow-sm">
                 @endif
@@ -678,7 +667,6 @@
             <p class="mb-4 text-muted small" style="max-width: 500px; margin: 0 auto; line-height: 1.8;">Berkomitmen penuh membentuk pengemudi cerdas, berpengetahuan luas, dan bertanggung jawab.</p>
             
             <div class="d-flex justify-content-center gap-3 mb-4">
-                <!-- 🔥 PERUBAHAN: Link SOSMED & Target Tab Baru -->
                 <a href="https://www.instagram.com/satriajayanti_pondokbambu?igsi=N3cwc2N2Zm5oN2Q2" target="_blank" class="social-circle-btn btn-social-ig shadow-sm"><i class="bi bi-instagram fs-5"></i></a>
                 <a href="https://www.facebook.com/satria.jatibening" target="_blank" class="social-circle-btn btn-social-fb shadow-sm"><i class="bi bi-facebook fs-5"></i></a>
                 <a href="https://wa.me/6281990087770" target="_blank" class="social-circle-btn btn-social-wa shadow-sm"><i class="bi bi-whatsapp fs-5"></i></a>
