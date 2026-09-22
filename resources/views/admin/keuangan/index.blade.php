@@ -244,6 +244,7 @@
                                                                         <option value="Tunai / Cash">Tunai / Cash (Offline)</option>
                                                                         <option value="BCA">Transfer BCA</option>
                                                                         <option value="BRI">Transfer BRI</option>
+                                                                        <option value="QRIS">Scan QRIS</option>
                                                                     </select>
                                                                 </div>
 

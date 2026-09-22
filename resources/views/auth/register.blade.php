@@ -136,7 +136,7 @@
             
             <div class="col-lg-5 d-none d-lg-flex desktop-cover">
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    @if(isset($setting) && $setting->logo)
+                    @if(isset($setting) &&$setting->logo)
                         <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="55" class="bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                     @else
                         <div class="bg-white text-primary rounded-3 d-inline-flex align-items-center justify-content-center p-2 shadow-sm" style="width: 55px; height: 55px;">
@@ -159,7 +159,7 @@
                 
                 <div class="w-100" style="max-width: 540px;">
                     <div class="d-block d-lg-none mobile-header">
-                        @if(isset($setting) && $setting->logo)
+                        @if(isset($setting) &&$setting->logo)
                             <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="45" class="mb-2 bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                         @else
                             <i class="bi bi-steering fs-1 text-white mb-2 d-block"></i>
@@ -179,7 +179,7 @@
                             <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-start p-3 bg-danger bg-opacity-10 text-danger">
                                 <i class="bi bi-exclamation-triangle-fill me-3 fs-5 mt-1"></i>
                                 <ul class="mb-0 ps-0 small fw-bold" style="list-style-type: none;">
-                                    @foreach ($errors->all() as $error)
+                                    @foreach ($errors->all() as$error)
                                         <li class="mb-1">{{ $error }}</li>
                                     @endforeach
                                 </ul>
@@ -229,7 +229,7 @@
                                     <span class="input-group-text bg-white"><i class="bi bi-geo-alt-fill text-danger"></i></span>
                                     <select name="branch_id" class="form-select border-start-0 ps-0 fw-bold" required>
                                         <option value="" selected disabled>-- Pilih Cabang Terdekat --</option>
-                                        @foreach($branches as $branch)
+                                        @foreach($branches as$branch)
                                             <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->nama_cabang }}
                                             </option>
@@ -256,11 +256,14 @@
                                     <span class="input-group-text bg-white"><i class="bi bi-box-seam-fill text-primary"></i></span>
                                     <select name="package_id" id="packageSelect" class="form-select border-start-0 ps-0 fw-bold text-dark" required disabled>
                                         <option value="" selected disabled>-- Pilih Paket Pelatihan --</option>
-                                        @foreach($packages as $package)
+                                        
+                                        <!-- Penambahan teks dan perhitungan biaya pendaftaran -->
+                                        @foreach($packages as$package)
                                             <option value="{{ $package->id_package }}" data-kategori="{{ $package->kategori }}" {{ old('package_id') == $package->id_package ? 'selected' : '' }}>
-                                                {{ $package->nama_package }} - Rp {{ number_format($package->harga, 0, ',', '.') }}
+                                                {{ $package->nama_package }} (+ Pendaftaran) - Rp {{ number_format($package->harga + 40000, 0, ',', '.') }}
                                             </option>
                                         @endforeach
+
                                     </select>
                                 </div>
                                 <div class="form-text mt-1 small text-muted"><i class="bi bi-info-circle me-1"></i>Invoice otomatis dikirim setelah pendaftaran.</div>
