@@ -179,7 +179,7 @@
                             <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-start p-3 bg-danger bg-opacity-10 text-danger">
                                 <i class="bi bi-exclamation-triangle-fill me-3 fs-5 mt-1"></i>
                                 <ul class="mb-0 ps-0 small fw-bold" style="list-style-type: none;">
-                                    @foreach ($errors->all() as$error)
+                                    @foreach($errors->all() as$error)
                                         <li class="mb-1">{{ $error }}</li>
                                     @endforeach
                                 </ul>
