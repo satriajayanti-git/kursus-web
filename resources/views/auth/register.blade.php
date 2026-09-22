@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <style>
-        /* Base & Font */
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { 
             background-color: #f4f7f6; 
@@ -17,7 +16,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Desktop Cover Image */
         .desktop-cover {
             background: linear-gradient(135deg, rgba(13, 110, 253, 0.85) 0%, rgba(11, 94, 215, 0.95) 100%), url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070&auto=format&fit=crop') center/cover;
             height: 100vh;
@@ -30,7 +28,6 @@
             color: white;
         }
 
-        /* Mobile Header */
         .mobile-header {
             background: linear-gradient(135deg, #0d6efd, #0b5ed7);
             border-radius: 0 0 2rem 2rem;
@@ -41,7 +38,6 @@
             box-shadow: 0 4px 20px rgba(13,110,253,0.15);
         }
 
-        /* Form Card Layout */
         .auth-wrapper {
             min-height: 100vh;
             display: flex;
@@ -60,7 +56,6 @@
             z-index: 10;
         }
 
-        /* Inputs (Touch-friendly & App-like) */
         .form-label {
             font-size: 0.85rem;
             font-weight: 700;
@@ -98,7 +93,6 @@
             color: #3b82f6;
         }
 
-        /* Submit Button */
         .btn-register {
             background: #0d6efd;
             border: none;
@@ -116,7 +110,6 @@
             box-shadow: 0 8px 20px rgba(13,110,253,0.3);
         }
 
-        /* Responsive Adjustments */
         @media (max-width: 767.98px) {
             .auth-card {
                 padding: 2rem 1.5rem;
@@ -136,7 +129,7 @@
             
             <div class="col-lg-5 d-none d-lg-flex desktop-cover">
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    @if(isset($setting) &&$setting->logo)
+                    @if (isset($setting) &&$setting->logo)
                         <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="55" class="bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                     @else
                         <div class="bg-white text-primary rounded-3 d-inline-flex align-items-center justify-content-center p-2 shadow-sm" style="width: 55px; height: 55px;">
@@ -159,7 +152,7 @@
                 
                 <div class="w-100" style="max-width: 540px;">
                     <div class="d-block d-lg-none mobile-header">
-                        @if(isset($setting) &&$setting->logo)
+                        @if (isset($setting) &&$setting->logo)
                             <img src="{{ asset('storage/uploads/settings/'.$setting->logo) }}" height="45" class="mb-2 bg-white p-2 rounded-3 shadow-sm" alt="Logo">
                         @else
                             <i class="bi bi-steering fs-1 text-white mb-2 d-block"></i>
@@ -214,7 +207,6 @@
                                 </div>
                             </div>
 
-                            <!-- 🔥 PENAMBAHAN FIELD ALAMAT DOMISILI -->
                             <div class="mb-3">
                                 <label class="form-label">Alamat Domisili</label>
                                 <div class="input-group">
@@ -229,7 +221,7 @@
                                     <span class="input-group-text bg-white"><i class="bi bi-geo-alt-fill text-danger"></i></span>
                                     <select name="branch_id" class="form-select border-start-0 ps-0 fw-bold" required>
                                         <option value="" selected disabled>-- Pilih Cabang Terdekat --</option>
-                                        @foreach($branches as$branch)
+                                        @foreach ($branches as$branch)
                                             <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->nama_cabang }}
                                             </option>
@@ -257,8 +249,7 @@
                                     <select name="package_id" id="packageSelect" class="form-select border-start-0 ps-0 fw-bold text-dark" required disabled>
                                         <option value="" selected disabled>-- Pilih Paket Pelatihan --</option>
                                         
-                                        <!-- Penambahan teks dan perhitungan biaya pendaftaran -->
-                                        @foreach($packages as$package)
+                                        @foreach ($packages as$package)
                                             <option value="{{ $package->id_package }}" data-kategori="{{ $package->kategori }}" {{ old('package_id') == $package->id_package ? 'selected' : '' }}>
                                                 {{ $package->nama_package }} (+ Pendaftaran) - Rp {{ number_format($package->harga + 40000, 0, ',', '.') }}
                                             </option>
@@ -274,9 +265,8 @@
                                     const kategoriSelect = document.getElementById('kategoriSelect');
                                     const packageSelect = document.getElementById('packageSelect');
                                     
-                                    // 1. Ekstrak dan amankan semua opsi paket bawaan Blade ke dalam array memory objek
                                     const masterPackages = Array.from(packageSelect.querySelectorAll('option'))
-                                        .filter(opt => opt.value !== "") // Singkirkan placeholder awal
+                                        .filter(opt => opt.value !== "") 
                                         .map(opt => ({
                                             value: opt.value,
                                             text: opt.textContent.trim(),
@@ -284,21 +274,17 @@
                                             isSelected: opt.hasAttribute('selected') || opt.selected
                                         }));
 
-                                    // 2. Pasang fungsi pembuat filter dinamis
                                     function updatePackageDropdown() {
                                         const selectedKategori = kategoriSelect.value;
                                         
-                                        // Jika belum ada kategori yang dipilih, biarkan dropdown paket terkunci
                                         if (!selectedKategori) {
                                             packageSelect.innerHTML = '<option value="" selected disabled>-- Pilih Paket Pelatihan --</option>';
                                             packageSelect.setAttribute('disabled', 'disabled');
                                             return;
                                         }
 
-                                        // Bersihkan isi dropdown paket untuk diisi ulang dengan data hasil filter
                                         packageSelect.innerHTML = '';
                                         
-                                        // Tambahkan placeholder default yang dinamis menyesuaikan kategori kelas
                                         const placeholderOpt = document.createElement('option');
                                         placeholderOpt.value = "";
                                         placeholderOpt.disabled = true;
@@ -306,16 +292,13 @@
                                         placeholderOpt.textContent = `-- Pilih List Paket ${selectedKategori} --`;
                                         packageSelect.appendChild(placeholderOpt);
 
-                                        // Filter data paket yang sesuai dengan nilai ENUM kategori database
                                         const filteredPackages = masterPackages.filter(pkg => pkg.kategori === selectedKategori);
 
-                                        // Suntikkan kembali opsi paket hasil saringan ke dalam element DOM select
                                         filteredPackages.forEach(pkg => {
                                             const optionEl = document.createElement('option');
                                             optionEl.value = pkg.value;
                                             optionEl.textContent = pkg.text;
                                             
-                                            // Amankan state seleksi jika proses registrasi sebelumnya terkena error validasi Laravel (old input)
                                             if (pkg.isSelected) {
                                                 optionEl.selected = true;
                                                 placeholderOpt.selected = false;
@@ -323,14 +306,11 @@
                                             packageSelect.appendChild(optionEl);
                                         });
 
-                                        // Aktifkan kembali dropdown paket agar bisa dipilih oleh pendaftar
                                         packageSelect.removeAttribute('disabled');
                                     }
 
-                                    // 3. Daftarkan event listener trigger ketika pilihan kategori berubah
                                     kategoriSelect.addEventListener('change', updatePackageDropdown);
 
-                                    // 4. OTOMATISASI RETENTION DATA: Jika ada old input (misal validasi email gagal), pastikan form tidak reset
                                     if (kategoriSelect.value) {
                                         updatePackageDropdown();
                                     }
