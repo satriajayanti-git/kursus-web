@@ -205,12 +205,10 @@
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label class="small fw-bold text-muted mb-1">Pilih Tanggal</label>
-                                                <!-- 🔥 TRIGGER AJAX UNTUK CEK UNIT -->
                                                 <input type="date" name="tanggal" id="tanggalJadwal" class="form-control shadow-sm" min="{{ date('Y-m-d') }}" required>
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="small fw-bold text-muted mb-1">Pilih Jam Latihan (1 Jam)</label>
-                                                <!-- 🔥 JAM TER-DISABLE SEBELUM TANGGAL DIPILIH -->
                                                 <select name="jam_mulai" id="jamMulaiSelect" class="form-select shadow-sm" required disabled>
                                                     <option value="">-- Pilih Tanggal Dahulu --</option>
                                                 </select>
@@ -328,7 +326,6 @@
                         <h4 class="fw-bold mb-0"><i class="bi bi-wallet2 me-2 text-primary"></i>Informasi Keuangan</h4>
                     </div>
 
-                    <!-- 🔥 LOGIC BARU: SUMMARY CARDS -->
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-md-6">
                             <div class="card card-custom p-3 bg-white shadow-sm border-start border-4 border-success h-100">
@@ -355,7 +352,6 @@
                                 <div class="card card-custom p-4 bg-white shadow-sm mb-4 {{ $tagihanUtama->status == 'Ditolak' ? 'border border-danger' : '' }}">
                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                         <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Tagihan Utama</h5>
-                                        <!-- 🔥 CHECKBOX BULK PAYMENT -->
                                         @if($tagihanUtama->status != 'Lunas' && $tagihanUtama->status != 'Pending')
                                             <input type="checkbox" class="form-check-input bill-checkbox shadow-sm border-secondary" value="{{ $tagihanUtama->id }}" data-nominal="{{ $tagihanUtama->total_tagihan }}">
                                         @endif
@@ -364,6 +360,8 @@
                                     <h4 class="fw-bolder text-dark mb-1">Rp {{ number_format($tagihanUtama->total_tagihan,0,',','.') }}</h4>
                                     <p class="small text-muted fw-bold mb-3">
                                         {{ $user->package->nama_package ?? 'Paket' }}
+                                        <!-- 🔥 LOGIC LABEL 40k DI TAGIHAN UTAMA (SISWA) -->
+                                        <span class="text-primary ms-1">(+ Rp 40.000 Pendaftaran)</span>
                                         @if($sudahAdaPelunasan) <span class="badge bg-warning text-dark ms-1">Status: Down Payment (DP)</span> @endif
                                     </p>
 
@@ -465,7 +463,6 @@
                                                 @foreach($tagihanTambahan as $tb)
                                                     <div class="card p-3 shadow-sm border-0 {{ $tb->status == 'Ditolak' ? 'rejected-bill' : 'extra-bill' }} rounded-4 position-relative">
                                                         
-                                                        <!-- 🔥 CHECKBOX BULK PAYMENT -->
                                                         @if($tb->status != 'Lunas' && $tb->status != 'Pending')
                                                             <div class="position-absolute top-0 end-0 p-3">
                                                                 <input type="checkbox" class="form-check-input bill-checkbox shadow-sm border-secondary" value="{{ $tb->id }}" data-nominal="{{ $tb->total_tagihan }}">
@@ -544,6 +541,10 @@
                                                     <span class="text-muted d-inline-block text-truncate" style="max-width: 150px; font-size: 0.7rem;" title="{{ $trx->keterangan }}">
                                                         {{ $trx->keterangan ?? 'Paket Kursus' }}
                                                     </span>
+                                                    <!-- 🔥 LOGIC LABEL 40k DI HISTORI TRANSAKSI (SISWA) -->
+                                                    @if($trx->jenis_tagihan == 'Paket Utama')
+                                                        <span class="text-primary d-block fw-bold" style="font-size: 0.65rem;">(+ Rp 40.000 Pendaftaran)</span>
+                                                    @endif
                                                 </td>
                                                 <td class="fw-bold text-success small">Rp {{ number_format($trx->total_tagihan, 0, ',', '.') }}</td>
                                                 <td class="text-center">
@@ -645,7 +646,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- 🔥 REVISI AJAX & JS LOGIC -->
     <script>
         // 1. Logic Tabs
         document.querySelectorAll('[data-bs-toggle="pill"]').forEach(btn => {
@@ -766,7 +766,6 @@
                             const opt = document.createElement('option');
                             opt.value = slot.jam_mulai;
                             
-                            // Visualisasi persis sesuai permintaan: 0/2, 2/2, 1/2
                             if(slot.tersedia <= 0) {
                                 opt.innerHTML = `${slot.jam_mulai} - ${endStr} WIB (Penuh: 0/${slot.total} Unit)`;
                                 opt.disabled = true;
