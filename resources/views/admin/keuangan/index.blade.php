@@ -71,7 +71,6 @@
 
             @if(session('success')) <div class="alert alert-success border-0 shadow-sm mb-4 fw-bold rounded-4"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}</div> @endif
 
-            <!-- 🔥 ACCORDION MUTASI PER SISWA -->
             <div class="accordion" id="accordionKeuangan">
                 @forelse($siswasMutasi as $siswa)
                     @php
@@ -79,7 +78,6 @@
                         $totalLunasBulanIni = $siswa->pembayarans->where('status', 'Lunas')->sum('total_tagihan');
                         $adaPending = $siswa->pembayarans->where('status', 'Pending')->count() > 0;
                         
-                        // Deteksi Bulk Payment (Grup berdasarkan bukti bayar)
                         $groupedPayments = $siswa->pembayarans->groupBy(function($item) {
                             return $item->bukti_bayar ? $item->bukti_bayar : 'single_'.$item->id;
                         });
@@ -121,7 +119,6 @@
                                 <div class="list-group list-group-custom">
                                     @foreach($groupedPayments as $key => $group)
                                         @if($group->count() > 1 && !str_starts_with($key, 'single_'))
-                                            <!-- 🔥 PEMBAYARAN GABUNGAN -->
                                             @php 
                                                 $totalGroup = $group->sum('total_tagihan'); 
                                                 $statusGroup = $group->first()->status; 
@@ -135,7 +132,11 @@
                                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-2 mb-2 px-3 py-1"><i class="bi bi-collection-fill me-1"></i> PEMBAYARAN GABUNGAN</span>
                                                         <ul class="list-unstyled ms-3 small mb-0 border-start border-primary ps-3 border-2">
                                                             @foreach($group as $g)
-                                                                <li class="mb-1 text-dark fw-bold">↳ {{ $g->keterangan }} <span class="text-success ms-1">(Rp {{ number_format($g->total_tagihan,0,',','.') }})</span></li>
+                                                                <li class="mb-1 text-dark fw-bold">↳ {{ $g->keterangan }} 
+                                                                    <!-- 🔥 LOGIC LABEL 40k DI BULK PAYMENT -->
+                                                                    @if($g->jenis_tagihan == 'Paket Utama') <span class="text-primary fst-italic">(+ Rp 40.000 Pendaftaran)</span> @endif
+                                                                    <span class="text-success ms-1">(Rp {{ number_format($g->total_tagihan,0,',','.') }})</span>
+                                                                </li>
                                                             @endforeach
                                                         </ul>
                                                     </div>
@@ -154,7 +155,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Modal Verifikasi Gabungan -->
                                             <div class="modal fade" id="{{ $modalId }}" tabindex="-1">
                                                 <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content border-0 shadow-lg rounded-4">
@@ -191,7 +191,6 @@
                                             </div>
 
                                         @else
-                                            <!-- 🔥 PEMBAYARAN SATUAN (SINGLE) -->
                                             @php $p = $group->first(); @endphp
                                             <div class="list-group-item p-3 border-start border-4 bg-white {{ $p->status == 'Lunas' ? 'border-success' : ($p->status == 'Ditolak' ? 'border-danger' : 'border-warning') }}">
                                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -199,6 +198,10 @@
                                                         <small class="text-muted fw-bold"><i class="bi bi-calendar3 me-2"></i>{{ date('d M Y, H:i', strtotime($p->updated_at)) }}</small><br>
                                                         <span class="fw-bolder text-dark d-block mt-1">{{ $p->jenis_tagihan }}</span>
                                                         <small class="text-muted fw-bold">{{ preg_replace('/\s*\(Via(?: Bank)?:.*?\)/', '', $p->keterangan) }}</small>
+                                                        <!-- 🔥 LOGIC LABEL 40k DI SINGLE PAYMENT -->
+                                                        @if($p->jenis_tagihan == 'Paket Utama')
+                                                            <small class="text-primary fw-bold d-block mt-1">(+ Rp 40.000 Pendaftaran)</small>
+                                                        @endif
                                                     </div>
                                                     <div class="text-end">
                                                         <h6 class="fw-bolder mb-1 text-dark">Rp {{ number_format($p->total_tagihan,0,',','.') }}</h6>
@@ -213,7 +216,6 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Modal Verifikasi Satuan (Persis Seperti Asli) -->
                                             <div class="modal fade" id="kelolaModal{{ $p->id }}" tabindex="-1">
                                                 <div class="modal-dialog modal-dialog-centered">
                                                     <div class="modal-content border-0 shadow-lg rounded-4">
@@ -248,7 +250,9 @@
                                                                     </select>
                                                                 </div>
 
-                                                                @php $sudahAdaPelunasan = \App\Models\Pembayaran::where('user_id', $p->user_id)->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')->exists(); @endphp
+                                                                @php 
+                                                                    $sudahAdaPelunasan = \App\Models\Pembayaran::where('user_id', $p->user_id)->where('keterangan', 'Pelunasan Sisa Pembayaran Paket Utama')->exists();
+                                                                @endphp
                                                                 
                                                                 @if($p->jenis_tagihan == 'Paket Utama' && !$sudahAdaPelunasan && !$p->bukti_bayar)
                                                                 <div class="text-start bg-white p-3 rounded border border-primary-subtle mb-4 shadow-sm">
@@ -304,7 +308,6 @@
 
     <!-- Modal Tambah Tagihan Tambahan -->
     <div class="modal fade" id="tambahTagihanModal" tabindex="-1">
-        <!-- Struktur sama persis seperti file asli -->
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header bg-dark text-white border-0">
