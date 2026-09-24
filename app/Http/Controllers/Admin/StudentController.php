@@ -31,9 +31,8 @@ class StudentController extends Controller
             });
         }
 
-        // 🔥 REVISI: Tambahan Filtering berdasarkan Periode Bulan
         if ($request->filled('periode')) {
-            $periodeParts = explode('-', $request->periode); // Format YYYY-MM
+            $periodeParts = explode('-', $request->periode); 
             if (count($periodeParts) == 2) {
                 $query->whereYear('created_at', $periodeParts[0])
                       ->whereMonth('created_at', $periodeParts[1]);
@@ -42,7 +41,6 @@ class StudentController extends Controller
 
         $students = $query->orderBy('created_at', 'asc')->get();
         
-        // Perhitungan untuk ditampilkan di badge Atas (Dihitung berdasarkan filter aktif)
         $totalAktif = $students->where('status', 'Aktif')->count();
         $totalSelesai = $students->where('status', 'Selesai Latihan')->count();
         $totalKeseluruhan = $totalAktif + $totalSelesai; 
@@ -106,6 +104,7 @@ class StudentController extends Controller
 
         $paket = Package::where('id_package', $request->id_package)->first();
 
+        // 🔥 LOGIC BARU: Tagihan Paket Utama (Harga Asli Paket)
         Pembayaran::create([
             'user_id'       => $siswa->id,
             'id_package'    => $paket->id_package,
@@ -114,6 +113,17 @@ class StudentController extends Controller
             'jenis_tagihan' => 'Paket Utama',
             'status'        => 'Pending',
             'keterangan'    => 'Pendaftaran Offline via Admin. Menunggu upload bukti bayar.',
+        ]);
+
+        // 🔥 LOGIC BARU: Tagihan Biaya Pendaftaran (Terpisah)
+        Pembayaran::create([
+            'user_id'       => $siswa->id,
+            'id_package'    => $paket->id_package,
+            'branch_id'     => $admin->branch_id,
+            'total_tagihan' => 40000,
+            'jenis_tagihan' => 'Tambahan',
+            'status'        => 'Pending',
+            'keterangan'    => 'Biaya Pendaftaran Siswa Baru (Offline)',
         ]);
 
         return back()->with('success', 'Akun siswa berhasil dibuat dengan ID ' . $id_siswa . '! Tagihan otomatis telah diterbitkan di menu Keuangan.');
@@ -136,7 +146,6 @@ class StudentController extends Controller
             'username'     => 'required|string|unique:users,username,' . $id,
             'email'        => 'required|email|unique:users,email,' . $id,
             'no_telp'      => 'required|string|max:20',
-            // 🔥 REVISI: Validasi menerima "Selesai Latihan"
             'status'       => 'required|in:Aktif,Non-Aktif,Selesai Latihan',
             'alamat'       => 'required|string',
             'password'     => 'nullable|string|min:6',

@@ -33,33 +33,28 @@ class RegisterController extends Controller
 
         DB::transaction(function () use ($request) {
             
-            // 🔥 LOGIC AUTO-GENERATE ID SISWA FORMAT BARU (SJN + Bulan + Tahun + ID Cabang + Urutan)
+            // 🔥 LOGIC AUTO-GENERATE ID SISWA FORMAT BARU
             $prefix = 'SJN';
             $bulan = date('m'); 
             $tahun = date('y'); 
             
-            // Ambil ID Cabang dari input siswa dan jadikan 2 digit (contoh: 1 menjadi 01)
             $idCabangPad = str_pad($request->branch_id, 2, '0', STR_PAD_LEFT);
-            
-            $formatDepan = $prefix . $bulan . $tahun . $idCabangPad; // Hasil: SJN082601
+            $formatDepan = $prefix . $bulan . $tahun . $idCabangPad;
 
-            // Cari siswa terakhir yang daftar di bulan, tahun, dan cabang yang sama
             $siswaTerakhir = User::where('role', 'siswa')
                                 ->where('id_siswa', 'like', $formatDepan . '%')
                                 ->orderBy('id_siswa', 'desc')
                                 ->first();
 
             if ($siswaTerakhir && $siswaTerakhir->id_siswa) {
-                // Ambil sisa karakter urutan paling belakang
                 $urutanTerakhir = (int) substr($siswaTerakhir->id_siswa, strlen($formatDepan));
                 $urutanBaru = $urutanTerakhir + 1;
                 $id_siswa_baru = $formatDepan . str_pad($urutanBaru, 2, '0', STR_PAD_LEFT); 
             } else {
-                // Jika belum ada sama sekali di cabang dan bulan ini, mulai dari urutan 01
                 $id_siswa_baru = $formatDepan . '01';
             }
 
-            // 1. Simpan User Siswa beserta ID Cerdas dan Alamat
+            // 1. Simpan User Siswa
             $user = User::create([
                 'id_siswa'     => $id_siswa_baru, 
                 'nama_lengkap' => $request->nama_lengkap,
@@ -76,15 +71,26 @@ class RegisterController extends Controller
 
             $package = Package::where('id_package', $request->package_id)->first();
 
-            // 2. Otomatisasi Invoice Paket Utama (Ditambah biaya pendaftaran Rp 40.000)
+            // 2. 🔥 LOGIC BARU: Otomatisasi Invoice Paket Utama (Harga Asli Paket Tanpa 40k)
             Pembayaran::create([
                 'user_id'       => $user->id,
                 'id_package'    => $request->package_id,
                 'branch_id'     => $request->branch_id,
-                'total_tagihan' => $package->harga + 40000,
+                'total_tagihan' => $package->harga,
                 'jenis_tagihan' => 'Paket Utama',
                 'status'        => 'Pending',
-                'keterangan'    => 'Pendaftaran kursus paket: ' . $package->nama_package . ' (+ Pendaftaran)'
+                'keterangan'    => 'Pendaftaran kursus paket: ' . $package->nama_package
+            ]);
+
+            // 3. 🔥 LOGIC BARU: Otomatisasi Invoice Biaya Pendaftaran (Terpisah)
+            Pembayaran::create([
+                'user_id'       => $user->id,
+                'id_package'    => $request->package_id, // Disematkan agar sinkron
+                'branch_id'     => $request->branch_id,
+                'total_tagihan' => 40000,
+                'jenis_tagihan' => 'Tambahan', // Dibuat 'Tambahan' agar masuk ke kotak tagihan ekstra
+                'status'        => 'Pending',
+                'keterangan'    => 'Biaya Pendaftaran Siswa Baru'
             ]);
         });
 
