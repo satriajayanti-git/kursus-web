@@ -382,7 +382,7 @@
                                                 @if($j->instructor_id == $ins->id)
                                                     <option value="{{ $ins->id }}" selected class="fw-bold text-success">✅ {{ $ins->nama_lengkap }} (Tugas Saat Ini)</option>
                                                 @else
-                                                    <option disabled class="text-warning fw-bold bg-warning-subtle">⚠️ {{ $ins->nama_lengkap }} (Jadwal Bentrok)</option>
+                                                    <option disabled class="text-warning fw-bold bg-warning-subtle">⚠️ {{ $ins->nama_lengkap }} (Sudah Booking)</option>
                                                 @endif
                                             @else
                                                 <option value="{{ $ins->id }}" {{ $j->instructor_id == $ins->id ? 'selected' : '' }}>
