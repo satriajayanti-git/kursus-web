@@ -73,7 +73,25 @@
 
                 <!-- TABEL JADWAL (RESPONSIF) -->
                 <div class="card card-custom border-top border-info border-4 mb-4 p-3 p-md-4">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-card-checklist me-2 text-info"></i>Daftar Siswa & Jadwal</h6>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-card-checklist me-2 text-info"></i>Daftar Siswa & Jadwal</h6>
+                        
+                        <!-- 🔥 FORM FILTER NAMA SISWA -->
+                        <form action="{{ url()->current() }}" method="GET" class="d-flex gap-2">
+                            <div class="input-group input-group-sm" style="max-width: 320px;">
+                                <input type="text" name="search" class="form-control rounded-start-pill ps-3" placeholder="Cari nama siswa..." value="{{ request('search') }}">
+                                <button class="btn btn-info text-white rounded-end-pill px-3" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                @if(request('search'))
+                                    <a href="{{ url()->current() }}" class="btn btn-outline-secondary rounded-pill ms-1 btn-sm d-flex align-items-center px-2" title="Reset Filter">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-nowrap">
                             <thead class="table-light">
@@ -90,7 +108,6 @@
                                 <tr>
                                     <td>
                                         <div class="fw-bold text-dark">{{ date('d M Y', strtotime($jadwal->tanggal)) }}</div>
-                                        <!-- 🔥 Penambahan format jam selesai -->
                                         <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ date('H:i', strtotime($jadwal->jam_mulai)) }} - {{ date('H:i', strtotime($jadwal->jam_mulai) + 3600) }} WIB</div>
                                     </td>
                                     <td>
@@ -144,7 +161,11 @@
                                 </div>
                                 @endif
                                 @empty
-                                <tr><td colspan="5" class="text-center text-muted py-5">Belum ada jadwal.</td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        {{ request('search') ? 'Siswa dengan nama "'.request('search').'" tidak ditemukan.' : 'Belum ada jadwal.' }}
+                                    </td>
+                                </tr>
                                 @endforelse
                             </tbody>
                         </table>

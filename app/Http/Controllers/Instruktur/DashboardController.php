@@ -5,19 +5,19 @@ namespace App\Http\Controllers\Instruktur;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\{Jadwal, Unit, LaporanUnit}; // 🔥 Tambahkan Unit & LaporanUnit
+use App\Models\{Jadwal, Unit, LaporanUnit};
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $branchId = $user->branch_id; 
         $hariIni = Carbon::today()->toDateString();
 
-        // 1. Tarik Data Jadwal
-        $jadwals = Jadwal::with(['user.package', 'branch', 'unit'])
+        // 1. Inisialisasi Query Jadwal
+        $query = Jadwal::with(['user.package', 'branch', 'unit'])
             ->where('instructor_id', $user->id)
             ->where('branch_id', $branchId)
             ->where(function($q) use ($hariIni) {
@@ -25,9 +25,17 @@ class DashboardController extends Controller
                 $q->orWhere(function($subQ) use ($hariIni) {
                     $subQ->where('tanggal', '<', $hariIni)->where('status', 'Disetujui');
                 });
-            })
-            ->orderBy('tanggal', 'asc')
-            ->get();
+            });
+
+        // 🔥 LOGIC FILTER: Pencarian berdasarkan Nama Siswa
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('user', function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', '%' . $search . '%');
+            });
+        }
+
+        $jadwals = $query->orderBy('tanggal', 'asc')->get();
 
         foreach ($jadwals as $j) {
             $j->pertemuan_ke = Jadwal::where('user_id', $j->user_id)
@@ -66,7 +74,7 @@ class DashboardController extends Controller
         return back()->with('success', 'Evaluasi disimpan! Jadwal masuk ke Arsip.');
     }
 
-    // 🔥 METHOD BARU: Menyimpan Laporan Kendala Unit
+    // 🔥 METHOD: Menyimpan Laporan Kendala Unit
     public function storeLaporanUnit(Request $request)
     {
         $request->validate([
