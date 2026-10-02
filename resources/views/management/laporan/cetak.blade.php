@@ -118,7 +118,8 @@
             </thead>
 
             @if($jenis == 'keuangan')
-                @forelse($groupedData as $index => $studentPayments)
+                @php $studentNo = 1; @endphp
+                @forelse($groupedData as $studentPayments)
                     @php
                         $student = $studentPayments->first();
                         $studentRowspan = $studentPayments->count() + 1;
@@ -145,7 +146,7 @@
                             @endphp
                             <tr>
                                 @if($paymentIndex === 0)
-                                    <td class="text-center fw-bold" rowspan="{{ $studentRowspan }}">{{ $index + 1 }}</td>
+                                    <td class="text-center fw-bold" rowspan="{{ $studentRowspan }}">{{ $studentNo }}</td>
                                 @endif
 
                                 <td class="text-center">{{ date('d/m/Y', strtotime($item->updated_at)) }}</td>
@@ -185,6 +186,7 @@
                             <td></td>
                         </tr>
                     </tbody>
+                    @php $studentNo++; @endphp
                 @empty
                     <tbody>
                         <tr>
