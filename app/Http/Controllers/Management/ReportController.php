@@ -101,6 +101,17 @@ class ReportController extends Controller
             $total = $data->count();
         }
 
-        return view('management.laporan.cetak', compact('data', 'jenis', 'tgl_awal', 'tgl_akhir', 'total', 'setting', 'nama_cabang', 'nama_admin'));
+        // Khusus laporan keuangan, kelompokkan transaksi berdasarkan siswa hanya untuk kebutuhan tampilan PDF.
+        // Data query dan perhitungan total tetap menggunakan $data seperti sebelumnya.
+        $groupedData = $jenis == 'keuangan'
+            ? $data->groupBy(function ($item) {
+                return $item->user_id
+                    ?? optional($item->user)->id
+                    ?? optional($item->user)->id_siswa
+                    ?? ('pembayaran-' . $item->id);
+            })
+            : collect();
+
+        return view('management.laporan.cetak', compact('data', 'groupedData', 'jenis', 'tgl_awal', 'tgl_akhir', 'total', 'setting', 'nama_cabang', 'nama_admin'));
     }
 }
