@@ -314,29 +314,67 @@
                     <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Buat Tagihan Tambahan</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ url('/admin/keuangan/tambahan') }}" method="POST">
+                <form action="{{ url('/admin/keuangan/tambahan') }}" method="POST" id="formTambahTagihan">
                     @csrf
                     <div class="modal-body p-4 text-start">
                         <div class="mb-3">
                             <label class="small fw-bold mb-1">Pilih Siswa</label>
-                            <select name="user_id" class="form-select select2-siswa-keuangan shadow-sm" required>
+                            <select name="user_id" id="tambahanUserId" class="form-select select2-siswa-keuangan shadow-sm" required>
                                 <option value="">-- Cari Siswa --</option>
                                 @foreach($siswas as $s)
-                                    <option value="{{ $s->id }}">{{ $s->nama_lengkap }} ({{ $s->username }})</option>
+                                    @php
+                                        $paketSiswa = $s->package;
+                                    @endphp
+                                    <option value="{{ $s->id }}" data-package-price="{{ $paketSiswa->harga ?? 0 }}">
+                                        {{ $s->nama_lengkap }} ({{ $s->username }})
+                                        @if($paketSiswa)
+                                            - {{ $paketSiswa->nama_package }}
+                                        @endif
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="mb-3">
                             <label class="small fw-bold mb-1">Keterangan Biaya</label>
-                            <input type="text" name="keterangan" class="form-control shadow-sm" placeholder="Contoh: Pindah Transmisi, dll" required>
+                            <select name="jenis_tambahan" id="jenisTambahan" class="form-select shadow-sm" required>
+                                <option value="">-- Pilih Keterangan Biaya --</option>
+                                <option value="biaya_sim">Biaya SIM</option>
+                                <option value="tip_instruktur">Tip Instruktur</option>
+                                <option value="upgrade_paket">Upgrade Paket</option>
+                            </select>
                         </div>
+
+                        <!-- Panel Upgrade Paket -->
+                        <div id="upgradePaketPanel" class="mb-3" style="display: none;">
+                            <div class="bg-light p-3 rounded border border-primary-subtle">
+                                <div class="mb-2">
+                                    <label class="small fw-bold text-muted mb-1">Paket Saat Ini</label>
+                                    <div id="paketSaatIniInfo" class="form-control bg-white small text-muted">-</div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="small fw-bold text-primary mb-1">Upgrade Menjadi</label>
+                                    <select name="target_package_id" id="targetPackageId" class="form-select shadow-sm">
+                                        <option value="">-- Pilih Paket Tujuan --</option>
+                                    </select>
+                                    <small id="upgradeOptionInfo" class="text-muted d-block mt-1"></small>
+                                </div>
+
+                                <div class="alert alert-info border-0 py-2 px-3 mb-0 small" id="upgradeSelisihInfo" style="display: none;">
+                                    Selisih harga paket akan otomatis dihitung dan nominal tagihan dapat disesuaikan admin.
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label class="small fw-bold mb-1">Nominal Tagihan (Rp)</label>
-                            <input type="number" name="total_tagihan" class="form-control shadow-sm" min="1000" required>
+                            <input type="number" name="total_tagihan" id="totalTagihanTambahan" class="form-control shadow-sm" min="1000" required>
+                            <small id="nominalHelp" class="text-muted d-block mt-1">Masukkan nominal tagihan sesuai kebutuhan.</small>
                         </div>
                     </div>
                     <div class="modal-footer bg-light border-0">
-                        <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">Kirim Tagihan</button>
+                        <button type="submit" id="submitTagihanTambahan" class="btn btn-primary w-100 rounded-pill fw-bold">Kirim Tagihan</button>
                     </div>
                 </form>
             </div>
@@ -348,6 +386,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Data opsi upgrade dibangun dari Controller berdasarkan paket siswa masing-masing.
+        const upgradeOptionsByUser = @json($upgradeOptionsByUser ?? []);
+
         $(document).ready(function() {
             $('.select2-siswa-keuangan').select2({
                 theme: 'bootstrap-5',
@@ -355,7 +396,182 @@
                 placeholder: '-- Ketik Nama / Username Siswa --',
                 width: '100%'
             });
+
+            $('#tambahanUserId').on('change', function() {
+                refreshUpgradeOptions();
+            });
+
+            $('#jenisTambahan').on('change', function() {
+                refreshTambahanForm();
+            });
+
+            $('#targetPackageId').on('change', function() {
+                autofillUpgradeNominal();
+            });
+
+            $('#formTambahTagihan').on('submit', function(e) {
+                const jenis = $('#jenisTambahan').val();
+                const userId = $('#tambahanUserId').val();
+
+                if (!userId) {
+                    e.preventDefault();
+                    alert('Silakan pilih siswa terlebih dahulu.');
+                    return;
+                }
+
+                if (jenis === 'upgrade_paket') {
+                    const targetId = $('#targetPackageId').val();
+                    if (!targetId) {
+                        e.preventDefault();
+                        alert('Silakan pilih paket tujuan upgrade terlebih dahulu.');
+                        return;
+                    }
+                }
+            });
+
+            $('#tambahTagihanModal').on('hidden.bs.modal', function() {
+                $('#formTambahTagihan')[0].reset();
+                $('#tambahanUserId').val(null).trigger('change');
+                $('#upgradePaketPanel').hide();
+                $('#targetPackageId').empty().append('<option value="">-- Pilih Paket Tujuan --</option>');
+                $('#paketSaatIniInfo').text('-');
+                $('#upgradeOptionInfo').text('');
+                $('#upgradeSelisihInfo').hide();
+                $('#nominalHelp').text('Masukkan nominal tagihan sesuai kebutuhan.');
+                $('#submitTagihanTambahan').prop('disabled', false).text('Kirim Tagihan');
+            });
         });
+
+        function formatRupiah(value) {
+            const number = parseInt(value || 0, 10);
+            return new Intl.NumberFormat('id-ID').format(number);
+        }
+
+        function refreshTambahanForm() {
+            const jenis = $('#jenisTambahan').val();
+            const isUpgrade = jenis === 'upgrade_paket';
+            const targetSelect = $('#targetPackageId');
+            const userId = $('#tambahanUserId').val();
+
+            if (isUpgrade) {
+                $('#upgradePaketPanel').show();
+                targetSelect.prop('required', true);
+                $('#nominalHelp').text('Nominal otomatis mengikuti selisih harga paket dan masih bisa diedit admin.');
+                refreshUpgradeOptions(userId);
+            } else {
+                $('#upgradePaketPanel').hide();
+                targetSelect.prop('required', false).val('');
+                $('#upgradeSelisihInfo').hide();
+                $('#nominalHelp').text('Masukkan nominal tagihan sesuai kebutuhan.');
+
+                if (jenis === 'biaya_sim') {
+                    $('#submitTagihanTambahan').text('Kirim Tagihan Biaya SIM');
+                } else if (jenis === 'tip_instruktur') {
+                    $('#submitTagihanTambahan').text('Kirim Tagihan Tip Instruktur');
+                } else {
+                    $('#submitTagihanTambahan').text('Kirim Tagihan');
+                }
+            }
+        }
+
+        function refreshUpgradeOptions(userId = null) {
+            const selectedUserId = userId || $('#tambahanUserId').val();
+            const targetSelect = $('#targetPackageId');
+            const info = $('#paketSaatIniInfo');
+            const optionInfo = $('#upgradeOptionInfo');
+
+            targetSelect.empty().append('<option value="">-- Pilih Paket Tujuan --</option>');
+            $('#totalTagihanTambahan').val('');
+            $('#upgradeSelisihInfo').hide();
+            optionInfo.text('');
+
+            if (!selectedUserId) {
+                info.text('-');
+                return;
+            }
+
+            const options = upgradeOptionsByUser[selectedUserId] || [];
+
+            // Ambil informasi paket saat ini dari option siswa untuk membantu admin.
+            const userOption = $('#tambahanUserId option[value="' + selectedUserId + '"]');
+            const label = userOption.text().trim();
+            const paketMatch = label.split(' - ');
+            info.text(paketMatch.length > 1 ? paketMatch[paketMatch.length - 1].trim() : 'Paket saat ini belum tersedia');
+
+            if (!options.length) {
+                targetSelect.prop('disabled', true).prop('required', false);
+                optionInfo.text('Tidak ada pilihan upgrade yang tersedia untuk siswa ini.');
+                return;
+            }
+
+            targetSelect.prop('disabled', false).prop('required', true);
+
+            options.forEach(function(option) {
+                const text = option.jumlah_pertemuan + 'x Pertemuan - Rp ' + formatRupiah(option.harga);
+                const $option = $('<option>', {
+                    value: option.id_package,
+                    text: text
+                });
+                targetSelect.append($option);
+            });
+
+            optionInfo.text('Pilihan hanya menampilkan paket dengan jumlah pertemuan lebih tinggi dari paket siswa saat ini.');
+        }
+
+        function autofillUpgradeNominal() {
+            const selectedUserId = $('#tambahanUserId').val();
+            const targetId = $('#targetPackageId').val();
+            const options = upgradeOptionsByUser[selectedUserId] || [];
+            const selectedOption = options.find(function(option) {
+                return String(option.id_package) === String(targetId);
+            });
+
+            if (!selectedOption) {
+                $('#totalTagihanTambahan').val('');
+                $('#upgradeSelisihInfo').hide();
+                return;
+            }
+
+            const selectedUserOption = $('#tambahanUserId option[value="' + selectedUserId + '"]');
+            const currentLabel = selectedUserOption.text().trim();
+            const currentPackageName = currentLabel.includes(' - ')
+                ? currentLabel.substring(currentLabel.lastIndexOf(' - ') + 3).trim()
+                : 'Paket Saat Ini';
+
+            const currentPackage = findCurrentPackagePrice(selectedUserId);
+            const selisih = selectedOption.harga - currentPackage.harga;
+
+            if (selisih > 0) {
+                $('#totalTagihanTambahan').val(selisih);
+                $('#upgradeSelisihInfo')
+                    .show()
+                    .html(
+                        '<strong>' + escapeHtml(currentPackageName) + '</strong> &rarr; <strong>' +
+                        escapeHtml(selectedOption.jumlah_pertemuan + 'x Pertemuan') +
+                        '</strong><br>Selisih harga: <strong>Rp ' + formatRupiah(selisih) + '</strong>. Nominal dapat diedit admin.'
+                    );
+            } else {
+                $('#totalTagihanTambahan').val('');
+                $('#upgradeSelisihInfo').hide();
+            }
+        }
+
+        // Harga paket saat ini dikirim bersamaan dari Controller agar nominal upgrade
+        // bisa diisi otomatis tanpa request AJAX tambahan.
+        function findCurrentPackagePrice(userId) {
+            const options = upgradeOptionsByUser[userId] || [];
+
+            // Controller menyimpan harga paket tujuan pada options. Untuk harga paket saat ini,
+            // gunakan data attribute yang ditanamkan pada option jika tersedia.
+            const selectedStudent = $('#tambahanUserId option[value="' + userId + '"]');
+            const currentPrice = parseInt(selectedStudent.data('package-price') || 0, 10);
+
+            return { harga: currentPrice };
+        }
+
+        function escapeHtml(text) {
+            return $('<div>').text(text || '').html();
+        }
 
         function toggleAlasan(selectElement, targetDivId) {
             const targetDiv = document.getElementById(targetDivId);
