@@ -91,6 +91,11 @@ Route::middleware(['auth', CheckRole::class . ':admin'])->prefix('admin')->group
     Route::post('/instruktur', [InstructorController::class, 'store']);
     Route::put('/instruktur/{id}', [InstructorController::class, 'update']);
     Route::delete('/instruktur/{id}', [InstructorController::class, 'destroy']);
+
+    // 🔥 ROUTE BARU: Laporan Kendala Unit khusus Admin Cabang (Satu Controller dengan Instruktur)
+    Route::post('/laporan-unit', [InstructorController::class, 'storeLaporan']);
+    Route::put('/laporan-unit/{id}', [InstructorController::class, 'updateLaporan']);
+
     Route::get('/cuti', [AdminCuti::class, 'index']);
     Route::post('/cuti', [AdminCuti::class, 'store']); 
     
