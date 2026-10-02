@@ -109,6 +109,9 @@ class ReportController extends Controller
                     ?? optional($item->user)->id
                     ?? optional($item->user)->id_siswa
                     ?? ('pembayaran-' . $item->id);
+            })->sortBy(function ($payments) {
+                $student = $payments->first()->user;
+                return optional($student)->id ?? optional($student)->id_siswa ?? PHP_INT_MAX;
             })
             : collect();
 
